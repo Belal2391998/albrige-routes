@@ -1,0 +1,1 @@
+    fleetLead: "A live command view of the fleet and services — swipe or use the arrows to browse the viewports.",

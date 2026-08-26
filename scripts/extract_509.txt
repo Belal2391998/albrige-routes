@@ -1,0 +1,14 @@
+const THEME_ICONS: Record<FleetServiceTheme, ComponentType<{ className?: string }>> = {
+  campus: GraduationCap,
+  airport: Plane,
+  school: Users,
+  coastal: Crown,
+  hub: Clock3,
+  "fleet-a": Bus,
+  "fleet-b": Bus,
+  "fleet-c": Bus,
+  "fleet-d": Bus,
+  "fleet-e": Bus,
+  "fleet-f": Bus,
+  "fleet-g": Bus,
+};

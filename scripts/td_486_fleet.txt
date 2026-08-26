@@ -1,0 +1,85 @@
+export type FleetServiceTheme =
+  | "campus"
+  | "airport"
+  | "school"
+  | "luxury"
+  | "hub"
+  | "coastal";
+
+export type FleetServiceCard = {
+  id: FleetServiceTheme;
+  image: string;
+  title: Localized;
+  description: Localized;
+  rating: number;
+  href: string;
+};
+
+export const fleetServiceCards: FleetServiceCard[] = [
+  {
+    id: "campus",
+    image: fleetInteriorGallery,
+    title: { ar: "خطوط الجامعة الذكية", en: "Smart university lines" },
+    description: {
+      ar: "شبكة خطوط جامعية تربط الحرم بنقاط التجمع مع تتبّع مباشر لمسار الحافلة.",
+      en: "Campus lines linking stops to campus with live bus tracking on every route.",
+    },
+    rating: 5,
+    href: "#lines",
+  },
+  {
+    id: "airport",
+    image: fleetRoadGallery,
+    title: { ar: "خدمات نقل المطارات", en: "Airport transport services" },
+    description: {
+      ar: "توصيل من وإلى المطار بأوقات دقيقة وأسطول حديث يضمن راحة المسافرين.",
+      en: "Punctual airport transfers with a modern fleet built for passenger comfort.",
+    },
+    rating: 5,
+    href: "#lines",
+  },
+  {
+    id: "school",
+    image: fleetBoardingGallery,
+    title: { ar: "نقل مدرسي موثوق", en: "Reliable school transport" },
+    description: {
+      ar: "مسارات آمنة ومواعيد ثابتة لنقل الطلاب يوميًا مع متابعة لحظية للأهالي.",
+      en: "Safe daily school routes with fixed schedules and live parent tracking.",
+    },
+    rating: 5,
+    href: "#lines",
+  },
+  {
+    id: "luxury",
+    image: heroFleetGallery,
+    title: { ar: "خدمات النقل الفاخر", en: "Luxury transport services" },
+    description: {
+      ar: "حافلات VIP مكيّفة بمقاعد جلدية وخدمة راقية للرحلات الخاصة والمناسبات.",
+      en: "VIP air-conditioned coaches with leather seats for private trips and events.",
+    },
+    rating: 5,
+    href: "#lines",
+  },
+  {
+    id: "hub",
+    image: heroFleet,
+    title: { ar: "مركز تشغيل الأسطول", en: "Fleet operations hub" },
+    description: {
+      ar: "غرفة قيادة حيّة لمراقبة الحافلات والصيانة والجداول لحظة بلحظة.",
+      en: "A live command view for buses, maintenance, and schedules in real time.",
+    },
+    rating: 5,
+    href: "#lines",
+  },
+  {
+    id: "coastal",
+    image: fleetRoad,
+    title: { ar: "رحلات المشهد الساحلي", en: "Coastal scenic routes" },
+    description: {
+      ar: "مسارات سياحية بإطلالات مفتوحة وحافلات مريحة للرحلات الجماعية الطويلة.",
+      en: "Scenic group routes with open views and comfortable long-haul coaches.",
+    },
+    rating: 5,
+    href: "#lines",
+  },
+];

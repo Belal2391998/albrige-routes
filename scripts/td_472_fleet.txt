@@ -1,0 +1,120 @@
+export const galleryImages = [
+  {
+    src: heroFleetGallery,
+    alt: { ar: "حافلة يوتنغ من أسطول البريجي", en: "Yutong coach from the Al-Breeji fleet" },
+  },
+  {
+    src: fleetBoardingGallery,
+    alt: { ar: "حافلة البريجي السياحية الفاخرة", en: "Premium Al-Breeji tourist coach" },
+  },
+  {
+    src: fleetRoadGallery,
+    alt: { ar: "حافلة مرسيدس من أسطول البريجي", en: "Mercedes coach from the Al-Breeji fleet" },
+  },
+  {
+    src: fleetInteriorGallery,
+    alt: { ar: "حافلة مرسيدس VIP من البريجي", en: "Al-Breeji Mercedes VIP coach" },
+  },
+];
+
+export type FleetServiceCard = {
+  id: string;
+  image: string;
+  title: Localized;
+  description: Localized;
+  rating: number;
+  href: string;
+};
+
+export const fleetServiceCards: FleetServiceCard[] = [
+  {
+    id: "luxury",
+    image: heroFleetGallery,
+    title: { ar: "خدمات النقل الفاخر", en: "Premium coach transport" },
+    description: {
+      ar: "حافلات VIP مكيّفة بمقاعد جلدية وخدمة راقية للرحلات الخاصة والمناسبات.",
+      en: "VIP air-conditioned coaches with leather seats for private trips and events.",
+    },
+    rating: 4.9,
+    href: "#lines",
+  },
+  {
+    id: "school",
+    image: fleetBoardingGallery,
+    title: { ar: "نقل مدرسي موثوق", en: "Reliable school transport" },
+    description: {
+      ar: "مسارات آمنة ومواعيد ثابتة لنقل الطلاب يوميًا مع متابعة لحظية للأهالي.",
+      en: "Safe daily school routes with fixed schedules and live parent tracking.",
+    },
+    rating: 4.8,
+    href: "#lines",
+  },
+  {
+    id: "airport",
+    image: fleetRoadGallery,
+    title: { ar: "خدمات نقل المطارات", en: "Airport transfer service" },
+    description: {
+      ar: "توصيل من وإلى المطار بأوقات دقيقة وأسطول حديث يضمن راحة المسافرين.",
+      en: "Punctual airport transfers with a modern fleet built for passenger comfort.",
+    },
+    rating: 4.7,
+    href: "#lines",
+  },
+  {
+    id: "campus",
+    image: fleetInteriorGallery,
+    title: { ar: "خطوط الجامعة الذكية", en: "Smart campus lines" },
+    description: {
+      ar: "شبكة خطوط جامعية تربط الحرم بنقاط التجمع مع تتبّع مباشر لمسار الحافلة.",
+      en: "Campus lines linking stops to campus with live bus tracking on every route.",
+    },
+    rating: 4.8,
+    href: "#lines",
+  },
+  {
+    id: "corporate",
+    image: fleetRoad,
+    title: { ar: "نقل الشركات والمؤسسات", en: "Corporate fleet hire" },
+    description: {
+      ar: "حلول نقل موظفين مرنة بجداول مخصّصة ومركبات حديثة للقطاع الخاص والعام.",
+      en: "Flexible employee shuttles with custom schedules for private and public sectors.",
+    },
+    rating: 4.6,
+    href: "#lines",
+  },
+  {
+    id: "tourism",
+    image: fleetBoarding,
+    title: { ar: "رحلات سياحية جماعية", en: "Group tourism coaches" },
+    description: {
+      ar: "حافلات سياحية مجهزة للرحلات الجماعية داخل الأردن مع سائقين محترفين.",
+      en: "Tour coaches for group trips across Jordan with professional drivers.",
+    },
+    rating: 4.9,
+    href: "#lines",
+  },
+  {
+    id: "vip-interior",
+    image: fleetInterior,
+    title: { ar: "تجربة مقصورة VIP", en: "VIP cabin experience" },
+    description: {
+      ar: "مقصورات فاخرة بإنارة هادئة وشاشات ترفيهية لرحلة مريحة من البداية للنهاية.",
+      en: "Quiet luxury cabins with soft lighting and entertainment for a smooth ride.",
+    },
+    rating: 5.0,
+    href: "#lines",
+  },
+  {
+    id: "fleet-ready",
+    image: heroFleet,
+    title: { ar: "أسطول جاهز على مدار الساعة", en: "Fleet ready around the clock" },
+    description: {
+      ar: "جاهزية تشغيل مستمرة لتلبية الطلبات العاجلة والرحلات الطويلة بأمان تام.",
+      en: "Round-the-clock readiness for urgent bookings and long-haul trips.",
+    },
+    rating: 4.7,
+    href: "#lines",
+  },
+];
+
+export { heroFleet, heroFleetVideo };

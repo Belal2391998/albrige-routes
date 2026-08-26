@@ -1,0 +1,70 @@
+export type LineCardMeta = {
+  slug: string;
+  heading: Localized;
+  badgeText: Localized;
+  pathSnippet: Localized;
+  accentGradient: string;
+  badgeStyle: string;
+  iconBg: string;
+  shadowTint: string;
+  busImage: string;
+};
+
+export const lineCardMeta: LineCardMeta[] = [
+  {
+    slug: "line-1",
+    heading: { ar: "خط التطبيقية — أبو نصير", en: "Tatbiqiyya — Abu Nseir Line" },
+    badgeText: { ar: "🟢 الخط الأول • 10 محطات تجمع", en: "🟢 Line 1 • 10 pickup stops" },
+    pathSnippet: {
+      ar: "مسجد أبو نصير ⟵ صويلح ⟵ حدائق الحسين ⟵ طريق المطار",
+      en: "Abu Nseir Mosque ← Sweileh ← King Hussein Parks ← Airport Road",
+    },
+    accentGradient: "from-blue-600 to-indigo-800",
+    badgeStyle: "bg-blue-500/15 text-blue-700 dark:bg-blue-400/15 dark:text-blue-300",
+    iconBg: "bg-gradient-to-br from-blue-600 to-indigo-800",
+    shadowTint: "rgba(37, 99, 235, 0.18)",
+    busImage: heroFleetGallery,
+  },
+  {
+    slug: "line-2",
+    heading: { ar: "خط الجامعة الأردنية", en: "University of Jordan Line" },
+    badgeText: { ar: "🟡 الخط الثاني • 9 محطات تجمع", en: "🟡 Line 2 • 9 pickup stops" },
+    pathSnippet: {
+      ar: "الجامعة الأردنية ⟵ دوار الواحة ⟵ دوار سيفوي ⟵ طريق المطار",
+      en: "University of Jordan ← Al-Waha ← Safeway Roundabout ← Airport Road",
+    },
+    accentGradient: "from-amber-500 to-yellow-600",
+    badgeStyle: "bg-amber-500/15 text-amber-700 dark:bg-amber-400/15 dark:text-amber-300",
+    iconBg: "bg-gradient-to-br from-amber-500 to-yellow-600",
+    shadowTint: "rgba(245, 158, 11, 0.2)",
+    busImage: fleetBoardingGallery,
+  },
+  {
+    slug: "line-3",
+    heading: { ar: "خط عريفة مول — مرج الحمام", en: "Areefa Mall — Marj Al-Hamam Line" },
+    badgeText: { ar: "🟢 الخط الثالث • 11 محطة تجمع", en: "🟢 Line 3 • 11 pickup stops" },
+    pathSnippet: {
+      ar: "عريفة مول ⟵ دوار عبدون ⟵ تاج مول ⟵ محمص الشعب",
+      en: "Areefa Mall ← Abdoun ← Taj Mall ← Al-Shaab Nuts Shop",
+    },
+    accentGradient: "from-teal-500 to-emerald-700",
+    badgeStyle: "bg-teal-500/15 text-teal-700 dark:bg-teal-400/15 dark:text-teal-300",
+    iconBg: "bg-gradient-to-br from-teal-500 to-emerald-700",
+    shadowTint: "rgba(20, 184, 166, 0.2)",
+    busImage: fleetRoadGallery,
+  },
+  {
+    slug: "line-4",
+    heading: { ar: "خط السلط — صويلح", en: "Salt — Sweileh Line" },
+    badgeText: { ar: "🟣 الخط الرابع • 11 محطة تجمع", en: "🟣 Line 4 • 11 pickup stops" },
+    pathSnippet: {
+      ar: "مثلث جامعة البلقاء ⟵ جسر الدباس ⟵ إشارة عين الباشا ⟵ دوار الكمالية",
+      en: "Al-Balqa University ← Al-Dabbas Bridge ← Ain Al-Basha ← Al-Kamaliya",
+    },
+    accentGradient: "from-purple-600 to-violet-800",
+    badgeStyle: "bg-purple-500/15 text-purple-700 dark:bg-purple-400/15 dark:text-purple-300",
+    iconBg: "bg-gradient-to-br from-purple-600 to-violet-800",
+    shadowTint: "rgba(147, 51, 234, 0.2)",
+    busImage: fleetInteriorGallery,
+  },
+];

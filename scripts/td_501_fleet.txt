@@ -1,0 +1,68 @@
+export type FleetServiceTheme = "campus" | "airport" | "school" | "coastal" | "hub";
+
+export type FleetServiceCard = {
+  id: FleetServiceTheme;
+  image: string;
+  title: Localized;
+  description: Localized;
+  rating: number;
+  href: string;
+};
+
+export const fleetServiceCards: FleetServiceCard[] = [
+  {
+    id: "campus",
+    image: fleetBoardingGallery,
+    title: { ar: "خطوط الجامعة الذكية", en: "Smart university lines" },
+    description: {
+      ar: "حافلة جامعية ذكية عند محطة مزدحمة أمام مكتبة الحرم.",
+      en: "A smart campus coach at a busy stop outside the university library.",
+    },
+    rating: 4.8,
+    href: "#lines",
+  },
+  {
+    id: "airport",
+    image: fleetRoadGallery,
+    title: { ar: "خدمات نقل المطارات", en: "Airport transfer" },
+    description: {
+      ar: "حافلات Fit فضية تحمّل المسافرين عند صالة المطار.",
+      en: "Silver Fit coaches loading passengers at a busy airport terminal.",
+    },
+    rating: 4.7,
+    href: "#lines",
+  },
+  {
+    id: "school",
+    image: fleetBoarding,
+    title: { ar: "نقل مدرسي موثوق", en: "School transfer" },
+    description: {
+      ar: "حافلات صفراء-بيضاء تتوقف لتحميل الأطفال في منطقة مدرسية.",
+      en: "Yellow-and-white school buses stopping to load children in a school zone.",
+    },
+    rating: 4.8,
+    href: "#lines",
+  },
+  {
+    id: "coastal",
+    image: heroFleetGallery,
+    title: { ar: "رحلات الساحل الفاخرة", en: "Coastal tour" },
+    description: {
+      ar: "حافلات Fit فضية تنساب على بوليفارد ساحلي بأشجار نخيل.",
+      en: "Silver Fit coaches gliding along a coastal boulevard with palm trees.",
+    },
+    rating: 4.9,
+    href: "#lines",
+  },
+  {
+    id: "hub",
+    image: heroFleet,
+    title: { ar: "مركز الأسطول 24 ساعة", en: "Fleet hub 24h" },
+    description: {
+      ar: "مركز صيانة وتشغيل حيّ مع فحوصات وتشخيصات لحظية للأسطول.",
+      en: "A live fleet hub with checkups, technicians, and diagnostic overlays.",
+    },
+    rating: 4.7,
+    href: "#lines",
+  },
+];

@@ -1,0 +1,158 @@
+export type FleetServiceTheme =
+  | "campus"
+  | "airport"
+  | "school"
+  | "coastal"
+  | "hub"
+  | "fleet-a"
+  | "fleet-b"
+  | "fleet-c"
+  | "fleet-d"
+  | "fleet-e"
+  | "fleet-f"
+  | "fleet-g";
+
+export type FleetServiceCard = {
+  id: FleetServiceTheme;
+  image: string;
+  title: Localized;
+  description: Localized;
+  rating: number;
+  href: string;
+};
+
+/** Unique bus photos only — no duplicate image sources. */
+export const fleetServiceCards: FleetServiceCard[] = [
+  {
+    id: "campus",
+    image: fleetBoardingGallery,
+    title: { ar: "خطوط الجامعة الذكية", en: "Smart university lines" },
+    description: {
+      ar: "حافلة جامعية ذكية عند محطة مزدحمة أمام مكتبة الحرم.",
+      en: "A smart campus coach at a busy stop outside the university library.",
+    },
+    rating: 4.8,
+    href: "#lines",
+  },
+  {
+    id: "airport",
+    image: fleetRoadGallery,
+    title: { ar: "خدمات نقل المطارات", en: "Airport transfer" },
+    description: {
+      ar: "حافلات Fit فضية تحمّل المسافرين عند صالة المطار.",
+      en: "Silver Fit coaches loading passengers at a busy airport terminal.",
+    },
+    rating: 4.7,
+    href: "#lines",
+  },
+  {
+    id: "school",
+    image: fleetBus4556,
+    title: { ar: "نقل مدرسي موثوق", en: "School transfer" },
+    description: {
+      ar: "حافلات صفراء-بيضاء تتوقف لتحميل الأطفال في منطقة مدرسية.",
+      en: "Yellow-and-white school buses stopping to load children in a school zone.",
+    },
+    rating: 4.8,
+    href: "#lines",
+  },
+  {
+    id: "coastal",
+    image: heroFleetGallery,
+    title: { ar: "رحلات الساحل الفاخرة", en: "Coastal tour" },
+    description: {
+      ar: "حافلات Fit فضية تنساب على بوليفارد ساحلي بأشجار نخيل.",
+      en: "Silver Fit coaches gliding along a coastal boulevard with palm trees.",
+    },
+    rating: 4.9,
+    href: "#lines",
+  },
+  {
+    id: "hub",
+    image: fleetInteriorGallery,
+    title: { ar: "مركز الأسطول 24 ساعة", en: "Fleet hub 24h" },
+    description: {
+      ar: "مركز صيانة وتشغيل حيّ مع فحوصات وتشخيصات لحظية للأسطول.",
+      en: "A live fleet hub with checkups, technicians, and diagnostic overlays.",
+    },
+    rating: 4.7,
+    href: "#lines",
+  },
+  {
+    id: "fleet-a",
+    image: fleetBus4555,
+    title: { ar: "أسطول البريجي", en: "Al-Breeji fleet" },
+    description: {
+      ar: "لقطة حديثة من أسطول حافلات البريجي.",
+      en: "A recent photo from the Al-Breeji coach fleet.",
+    },
+    rating: 4.8,
+    href: "#lines",
+  },
+  {
+    id: "fleet-b",
+    image: fleetBus4557,
+    title: { ar: "أسطول البريجي", en: "Al-Breeji fleet" },
+    description: {
+      ar: "حافلة البريجي بزاوية جانبية واضحة.",
+      en: "Al-Breeji coach captured from a clear side angle.",
+    },
+    rating: 4.9,
+    href: "#lines",
+  },
+  {
+    id: "fleet-c",
+    image: fleetBus4558,
+    title: { ar: "أسطول البريجي", en: "Al-Breeji fleet" },
+    description: {
+      ar: "واجهة أمامية لحافلة من أسطول البريجي.",
+      en: "Front view of an Al-Breeji fleet coach.",
+    },
+    rating: 4.8,
+    href: "#lines",
+  },
+  {
+    id: "fleet-d",
+    image: heroFleet,
+    title: { ar: "أسطول البريجي", en: "Al-Breeji fleet" },
+    description: {
+      ar: "حافلة جاهزة للتشغيل ضمن أسطول الشركة.",
+      en: "A coach ready for service within the company fleet.",
+    },
+    rating: 4.7,
+    href: "#lines",
+  },
+  {
+    id: "fleet-e",
+    image: fleetBoarding,
+    title: { ar: "أسطول البريجي", en: "Al-Breeji fleet" },
+    description: {
+      ar: "لحظة صعود الركاب إلى حافلة البريجي.",
+      en: "Passengers boarding an Al-Breeji coach.",
+    },
+    rating: 4.8,
+    href: "#lines",
+  },
+  {
+    id: "fleet-f",
+    image: fleetRoad,
+    title: { ar: "أسطول البريجي", en: "Al-Breeji fleet" },
+    description: {
+      ar: "حافلة البريجي على الطريق.",
+      en: "An Al-Breeji coach on the road.",
+    },
+    rating: 4.7,
+    href: "#lines",
+  },
+  {
+    id: "fleet-g",
+    image: fleetInterior,
+    title: { ar: "أسطول البريجي", en: "Al-Breeji fleet" },
+    description: {
+      ar: "تفاصيل مقصورة حافلة من أسطول البريجي.",
+      en: "Interior details from an Al-Breeji coach.",
+    },
+    rating: 4.9,
+    href: "#lines",
+  },
+];

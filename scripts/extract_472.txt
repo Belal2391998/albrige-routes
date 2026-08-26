@@ -1,0 +1,5 @@
+    fleetTitle: "Our fleet and services",
+    fleetLead: "Explore our transport services in an interactive row — swipe or use the arrows to browse.",
+    fleetMore: "See more",
+    fleetRatingLabel: "Rating",
+    linesSectionTitle: "Main routes & departure stops",

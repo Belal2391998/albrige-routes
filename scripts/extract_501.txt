@@ -1,0 +1,6 @@
+    fleetTitle: "Our fleet and services",
+    fleetLead:
+      "An integrated system designed to give you the highest levels of comfort and reliability, with smart technology that makes your university journey easier and smoother.",
+    fleetTagline: "A journey is the distance we never stop covering...",
+    fleetMore: "See more",
+    fleetRatingLabel: "Rating",
