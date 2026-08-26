@@ -222,23 +222,21 @@
 
   }
 
-This project was built with [Lovable](https://lovable.dev).
-
-## Build with Lovable
-
-Continue developing this project in the [Lovable editor](https://lovable.dev/projects/579b0dad-58c1-4dee-bc81-7fab39d76f65).
-
-- **Ship faster**: describe what you want to build and Lovable handles the code.
-- **Stay in sync**: every change made in Lovable is committed straight to this repository.
-- **Full ownership**: this code is yours. Push to `main` on GitHub and your changes sync back into Lovable, ready for your next prompt.
-
 ## Development
 
-Prefer working locally? You need Node.js and npm — [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating).
+You need Node.js and npm.
 
 ```sh
-git clone <this-repository-url>
-cd <repository-name>
+git clone https://github.com/Belal2391998/albrige-routes.git
+cd albrige-routes
 npm i
 npm run dev
 ```
+
+Build for production:
+
+```sh
+npm run build
+```
+
+Deployed on Vercel from the `main` branch.

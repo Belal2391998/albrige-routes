@@ -23,6 +23,9 @@ dist-ssr
 # Vercel build output
 .vercel
 
+# Legacy Lovable metadata (if recreated)
+.lovable
+
 # Environment secrets (keep .env.example tracked)
 .env
 .env.*

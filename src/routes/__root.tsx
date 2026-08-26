@@ -15,7 +15,6 @@ import { ScheduleProvider } from "../context/ScheduleContext";
 import { AdminShortcut } from "../components/AdminShortcut";
 import { SiteFooter } from "../components/SiteFooter";
 import { Toaster } from "../components/ui/sonner";
-import { reportLovableError } from "../lib/lovable-error-reporting";
 
 function NotFoundComponent() {
   return (
@@ -41,11 +40,6 @@ function ErrorComponent({ error, reset }: { error: Error; reset: () => void }) {
   const router = useRouter();
   useEffect(() => {
     console.error("[Albridge] page error", error);
-    try {
-      reportLovableError(error, { boundary: "tanstack_root_error_component" });
-    } catch {
-      /* never let reporting crash the fallback UI */
-    }
   }, [error]);
 
   return (
