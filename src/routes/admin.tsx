@@ -13,6 +13,7 @@ import {
   RefreshCcw,
   Route as RouteIcon,
   Save,
+  Settings,
   Shield,
   Trash2,
   Unlock,
@@ -104,11 +105,13 @@ function AdminPage() {
     deleteStation,
     saveLineBulk,
     resetToDefaults,
+    settings,
+    updateSettings,
   } = useSchedule();
 
   const [pin, setPin] = useState("");
   const [pinError, setPinError] = useState(false);
-  const [panel, setPanel] = useState<"routes" | "stations" | "security">("routes");
+  const [panel, setPanel] = useState<"routes" | "stations" | "settings" | "security">("routes");
   const [activeRouteId, setActiveRouteId] = useState<string>("");
   const [draft, setDraft] = useState<
     Record<
@@ -347,6 +350,7 @@ function AdminPage() {
             [
               { id: "routes" as const, label: t.adminRoutesTab, icon: RouteIcon },
               { id: "stations" as const, label: t.adminStationsTab, icon: Bus },
+              { id: "settings" as const, label: t.adminSettingsTab, icon: Settings },
               { id: "security" as const, label: t.adminSecurityTab, icon: KeyRound },
             ] as const
           ).map((tab) => (
@@ -369,6 +373,62 @@ function AdminPage() {
 
         {panel === "security" ? (
           <AdminSecurityPanel />
+        ) : panel === "settings" ? (
+          <div className="rounded-3xl border border-white/10 bg-white/[0.03] p-5 sm:p-6">
+            <div className="mb-5">
+              <h2 className="text-xl font-black text-white">{t.adminSettingsTitle}</h2>
+              <p className="mt-1.5 text-sm leading-relaxed text-slate-400">{t.adminSettingsLead}</p>
+            </div>
+
+            <div className="rounded-2xl border border-white/10 bg-white/[0.04] p-4 sm:p-5">
+              <div className="flex flex-wrap items-center justify-between gap-4">
+                <div className="max-w-xl">
+                  <div className="flex items-center gap-2">
+                    <Clock3 className="size-4 text-[#14B8A6]" />
+                    <p className="text-sm font-extrabold text-white">{t.adminShowOfficeHours}</p>
+                  </div>
+                  <p className="mt-1 text-xs leading-relaxed text-slate-400">{t.adminShowOfficeHoursHint}</p>
+                  <p
+                    className={cn(
+                      "mt-2 inline-flex items-center rounded-full px-2.5 py-1 text-[11px] font-bold",
+                      settings.showOfficeHours
+                        ? "bg-emerald-500/15 text-emerald-300"
+                        : "bg-slate-500/15 text-slate-400",
+                    )}
+                  >
+                    {settings.showOfficeHours ? t.adminOfficeHoursShown : t.adminOfficeHoursHidden}
+                  </p>
+                </div>
+
+                <button
+                  type="button"
+                  role="switch"
+                  aria-checked={settings.showOfficeHours}
+                  aria-label={t.adminShowOfficeHours}
+                  onClick={async () => {
+                    const next = !settings.showOfficeHours;
+                    await updateSettings({ showOfficeHours: next });
+                    toast.success(
+                      next ? t.adminOfficeHoursShown : t.adminOfficeHoursHidden,
+                    );
+                  }}
+                  className={cn(
+                    "relative inline-flex h-11 w-[4.5rem] shrink-0 items-center rounded-full border transition-all",
+                    settings.showOfficeHours
+                      ? "border-[#14B8A6]/50 bg-[#14B8A6]/20"
+                      : "border-white/10 bg-white/[0.06]",
+                  )}
+                >
+                  <span
+                    className={cn(
+                      "absolute top-1/2 size-8 -translate-y-1/2 rounded-full bg-white shadow-md transition-all",
+                      settings.showOfficeHours ? "end-1.5" : "start-1.5",
+                    )}
+                  />
+                </button>
+              </div>
+            </div>
+          </div>
         ) : panel === "routes" ? (
           <RoutesManager
             routes={allRoutes}

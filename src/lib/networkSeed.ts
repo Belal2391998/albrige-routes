@@ -2,6 +2,7 @@ import { getReturnDepartures } from "@/data/lineLectureSchedules";
 import { lines, type Line } from "@/data/transportData";
 import type { Localized } from "@/lib/i18n";
 import type { ManagedRoute, ManagedStation, NetworkSnapshot } from "@/lib/networkTypes";
+import { DEFAULT_APP_SETTINGS } from "@/lib/networkTypes";
 
 function mapsUrl(lat: number, lng: number) {
   return `https://www.google.com/maps?q=${lat},${lng}`;
@@ -50,6 +51,7 @@ export function seedNetworkFromStaticLines(): NetworkSnapshot {
   return {
     version: 1,
     routes,
+    settings: DEFAULT_APP_SETTINGS,
     updatedAt: "2026-01-01T00:00:00.000Z",
   };
 }

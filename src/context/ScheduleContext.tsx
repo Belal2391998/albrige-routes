@@ -4,6 +4,7 @@ import {
   useContext,
   useEffect,
   useMemo,
+  useRef,
   useState,
   type ReactNode,
 } from "react";
@@ -16,12 +17,13 @@ import {
 } from "@/lib/networkRepository";
 import { managedRouteToLine, seedNetworkFromStaticLines, snapshotToLines } from "@/lib/networkSeed";
 import type {
+  AppSettings,
   ManagedRoute,
   ManagedStation,
   NetworkSnapshot,
   StationStatus,
 } from "@/lib/networkTypes";
-import { newId } from "@/lib/networkTypes";
+import { DEFAULT_APP_SETTINGS, newId } from "@/lib/networkTypes";
 import { isSupabaseConfigured } from "@/lib/supabase";
 import { verifyAdminPassword, DEFAULT_ADMIN_PASSWORD } from "@/lib/adminAuth";
 
@@ -40,6 +42,7 @@ type ScheduleContextValue = {
   storageMode: "supabase" | "local";
   supabaseEnabled: boolean;
   snapshot: NetworkSnapshot;
+  settings: AppSettings;
   /** All routes including inactive (admin) */
   allRoutes: ManagedRoute[];
   /** Active routes only (public) */
@@ -66,6 +69,7 @@ type ScheduleContextValue = {
   resetLine: (routeId: string) => void;
   resetToDefaults: () => Promise<void>;
   persistNow: () => Promise<void>;
+  updateSettings: (patch: Partial<AppSettings>) => Promise<void>;
   isAdminUnlocked: boolean;
   unlockAdmin: (pin: string) => Promise<boolean>;
   lockAdmin: () => void;
@@ -112,6 +116,8 @@ export function ScheduleProvider({ children }: { children: ReactNode }) {
   const [ready, setReady] = useState(false);
   const [storageMode, setStorageMode] = useState<"supabase" | "local">("local");
   const [isAdminUnlocked, setIsAdminUnlocked] = useState(false);
+  const snapshotRef = useRef(snapshot);
+  snapshotRef.current = snapshot;
 
   useEffect(() => {
     let cancelled = false;
@@ -119,6 +125,7 @@ export function ScheduleProvider({ children }: { children: ReactNode }) {
       try {
         const { snapshot: loaded, source } = await loadNetwork();
         if (!cancelled) {
+          snapshotRef.current = loaded;
           setSnapshot(loaded);
           setStorageMode(source);
         }
@@ -137,6 +144,7 @@ export function ScheduleProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const commit = useCallback(async (next: NetworkSnapshot) => {
+    snapshotRef.current = next;
     setSnapshot(next);
     const mode = await persistNetwork(next);
     setStorageMode(mode);
@@ -145,6 +153,10 @@ export function ScheduleProvider({ children }: { children: ReactNode }) {
   const allRoutes = useMemo(
     () => snapshot.routes.slice().sort((a, b) => a.displayOrder - b.displayOrder),
     [snapshot],
+  );
+  const settings = useMemo(
+    () => ({ ...DEFAULT_APP_SETTINGS, ...snapshot.settings }),
+    [snapshot.settings],
   );
   const activeRoutes = useMemo(() => allRoutes.filter((r) => r.isActive), [allRoutes]);
   const liveLines = useMemo(() => snapshotToLines(snapshot, false), [snapshot]);
@@ -169,9 +181,9 @@ export function ScheduleProvider({ children }: { children: ReactNode }) {
       if (patch.departureTime != null) mapped.defaultTime = patch.departureTime;
       if (patch.trafficStatus != null) mapped.status = patch.trafficStatus as StationStatus;
       if (patch.adminNote != null) mapped.notes = patch.adminNote;
-      void commit(patchStationInSnapshot(snapshot, stopId, mapped));
+      void commit(patchStationInSnapshot(snapshotRef.current, stopId, mapped));
     },
-    [commit, snapshot],
+    [commit],
   );
 
   const updateStopTime = useCallback(
@@ -189,7 +201,7 @@ export function ScheduleProvider({ children }: { children: ReactNode }) {
 
   const saveLineBulk = useCallback(
     (stopPatches: Array<{ stopId: string } & StopScheduleOverride>) => {
-      let next = snapshot;
+      let next = snapshotRef.current;
       for (const p of stopPatches) {
         const mapped: Partial<ManagedStation> = {};
         if (p.departureTime != null) mapped.defaultTime = p.departureTime;
@@ -199,15 +211,16 @@ export function ScheduleProvider({ children }: { children: ReactNode }) {
       }
       void commit(next);
     },
-    [commit, snapshot],
+    [commit],
   );
 
   const saveStation = useCallback(
     async (station: ManagedStation) => {
+      const current = snapshotRef.current;
       const next: NetworkSnapshot = {
-        ...snapshot,
+        ...current,
         updatedAt: new Date().toISOString(),
-        routes: snapshot.routes.map((route) =>
+        routes: current.routes.map((route) =>
           route.id !== station.routeId
             ? route
             : {
@@ -220,12 +233,12 @@ export function ScheduleProvider({ children }: { children: ReactNode }) {
       };
       await commit(next);
     },
-    [commit, snapshot],
+    [commit],
   );
 
   const addStation = useCallback(
     async (routeId: string, partial?: Partial<ManagedStation>) => {
-      const route = snapshot.routes.find((r) => r.id === routeId);
+      const route = snapshotRef.current.routes.find((r) => r.id === routeId);
       const index = (route?.stations.length ?? 0) + 1;
       const station = {
         ...createEmptyStation(routeId, index),
@@ -237,15 +250,16 @@ export function ScheduleProvider({ children }: { children: ReactNode }) {
       await saveStation(station);
       return station;
     },
-    [saveStation, snapshot.routes],
+    [saveStation],
   );
 
   const deleteStation = useCallback(
     async (stationId: string) => {
+      const current = snapshotRef.current;
       const next: NetworkSnapshot = {
-        ...snapshot,
+        ...current,
         updatedAt: new Date().toISOString(),
-        routes: snapshot.routes.map((route) => ({
+        routes: current.routes.map((route) => ({
           ...route,
           stations: route.stations
             .filter((s) => s.id !== stationId)
@@ -254,36 +268,38 @@ export function ScheduleProvider({ children }: { children: ReactNode }) {
       };
       await commit(next);
     },
-    [commit, snapshot],
+    [commit],
   );
 
   const createRoute = useCallback(
     async (partial?: Partial<ManagedRoute>) => {
+      const current = snapshotRef.current;
       const route = createEmptyRoute({
         ...partial,
-        displayOrder: partial?.displayOrder ?? snapshot.routes.length + 1,
+        displayOrder: partial?.displayOrder ?? current.routes.length + 1,
       });
       const next: NetworkSnapshot = {
-        ...snapshot,
+        ...current,
         updatedAt: new Date().toISOString(),
-        routes: [...snapshot.routes, route],
+        routes: [...current.routes, route],
       };
       await commit(next);
       return route;
     },
-    [commit, snapshot],
+    [commit],
   );
 
   const updateRoute = useCallback(
     async (routeId: string, patch: Partial<ManagedRoute>) => {
+      const current = snapshotRef.current;
       const next: NetworkSnapshot = {
-        ...snapshot,
+        ...current,
         updatedAt: new Date().toISOString(),
-        routes: snapshot.routes.map((r) => (r.id === routeId ? { ...r, ...patch, id: r.id } : r)),
+        routes: current.routes.map((r) => (r.id === routeId ? { ...r, ...patch, id: r.id } : r)),
       };
       await commit(next);
     },
-    [commit, snapshot],
+    [commit],
   );
 
   const setRouteActive = useCallback(
@@ -293,14 +309,15 @@ export function ScheduleProvider({ children }: { children: ReactNode }) {
 
   const deleteRoute = useCallback(
     async (routeId: string) => {
+      const current = snapshotRef.current;
       const next: NetworkSnapshot = {
-        ...snapshot,
+        ...current,
         updatedAt: new Date().toISOString(),
-        routes: snapshot.routes.filter((r) => r.id !== routeId),
+        routes: current.routes.filter((r) => r.id !== routeId),
       };
       await commit(next);
     },
-    [commit, snapshot],
+    [commit],
   );
 
   const resetStop = useCallback((_stopId: string) => {
@@ -313,12 +330,29 @@ export function ScheduleProvider({ children }: { children: ReactNode }) {
 
   const resetToDefaults = useCallback(async () => {
     const { seedNetworkFromStaticLines } = await import("@/lib/networkSeed");
-    await commit(seedNetworkFromStaticLines());
+    const current = snapshotRef.current;
+    await commit({
+      ...seedNetworkFromStaticLines(),
+      settings: { ...DEFAULT_APP_SETTINGS, ...current.settings },
+    });
   }, [commit]);
 
   const persistNow = useCallback(async () => {
-    await commit(snapshot);
-  }, [commit, snapshot]);
+    await commit(snapshotRef.current);
+  }, [commit]);
+
+  const updateSettings = useCallback(
+    async (patch: Partial<AppSettings>) => {
+      const current = snapshotRef.current;
+      const next: NetworkSnapshot = {
+        ...current,
+        updatedAt: new Date().toISOString(),
+        settings: { ...DEFAULT_APP_SETTINGS, ...current.settings, ...patch },
+      };
+      await commit(next);
+    },
+    [commit],
+  );
 
   const unlockAdmin = useCallback(async (pin: string) => {
     const ok = await verifyAdminPassword(pin);
@@ -347,6 +381,7 @@ export function ScheduleProvider({ children }: { children: ReactNode }) {
       storageMode,
       supabaseEnabled: isSupabaseConfigured,
       snapshot,
+      settings,
       allRoutes,
       activeRoutes,
       liveLines,
@@ -369,6 +404,7 @@ export function ScheduleProvider({ children }: { children: ReactNode }) {
       resetLine,
       resetToDefaults,
       persistNow,
+      updateSettings,
       isAdminUnlocked,
       unlockAdmin,
       lockAdmin,
@@ -377,6 +413,7 @@ export function ScheduleProvider({ children }: { children: ReactNode }) {
       ready,
       storageMode,
       snapshot,
+      settings,
       allRoutes,
       activeRoutes,
       liveLines,
@@ -399,6 +436,7 @@ export function ScheduleProvider({ children }: { children: ReactNode }) {
       resetLine,
       resetToDefaults,
       persistNow,
+      updateSettings,
       isAdminUnlocked,
       unlockAdmin,
       lockAdmin,

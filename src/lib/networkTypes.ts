@@ -31,10 +31,20 @@ export type ManagedRoute = {
   stations: ManagedStation[];
 };
 
+export type AppSettings = {
+  /** When false, pickup schedules and return departures are hidden on the public site */
+  showOfficeHours: boolean;
+};
+
+export const DEFAULT_APP_SETTINGS: AppSettings = {
+  showOfficeHours: true,
+};
+
 export type NetworkSnapshot = {
   version: 1;
   routes: ManagedRoute[];
   updatedAt: string;
+  settings?: AppSettings;
 };
 
 /** DB row shapes (Supabase) */

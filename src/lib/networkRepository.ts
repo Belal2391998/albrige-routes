@@ -1,6 +1,7 @@
 import { getSupabase, isSupabaseConfigured } from "@/lib/supabase";
 import { seedNetworkFromStaticLines } from "@/lib/networkSeed";
 import type {
+  AppSettings,
   ManagedRoute,
   ManagedStation,
   NetworkSnapshot,
@@ -8,12 +9,28 @@ import type {
   StationRow,
   StationStatus,
 } from "@/lib/networkTypes";
-import { newId } from "@/lib/networkTypes";
+import { DEFAULT_APP_SETTINGS, newId } from "@/lib/networkTypes";
 
-const LOCAL_KEY = "albridge_network_v5";
+const LOCAL_KEY = "albridge_network_v6";
+const LEGACY_LOCAL_KEY = "albridge_network_v5";
+
+type AppSettingsRow = {
+  id: string;
+  show_office_hours: boolean;
+  updated_at: string;
+};
+
+function normalizeSettings(raw: unknown): AppSettings {
+  if (!raw || typeof raw !== "object") return DEFAULT_APP_SETTINGS;
+  const s = raw as AppSettings;
+  return {
+    showOfficeHours:
+      typeof s.showOfficeHours === "boolean" ? s.showOfficeHours : DEFAULT_APP_SETTINGS.showOfficeHours,
+  };
+}
 
 function emptySnapshot(): NetworkSnapshot {
-  return { version: 1, routes: [], updatedAt: new Date().toISOString() };
+  return { version: 1, routes: [], settings: DEFAULT_APP_SETTINGS, updatedAt: new Date().toISOString() };
 }
 
 function normalizeSnapshot(raw: unknown): NetworkSnapshot | null {
@@ -23,8 +40,23 @@ function normalizeSnapshot(raw: unknown): NetworkSnapshot | null {
   return {
     version: 1,
     routes: s.routes,
+    settings: normalizeSettings(s.settings),
     updatedAt: typeof s.updatedAt === "string" ? s.updatedAt : new Date().toISOString(),
   };
+}
+
+function readLegacyLocalNetwork(): NetworkSnapshot | null {
+  if (typeof window === "undefined") return null;
+  try {
+    const raw = window.localStorage.getItem(LEGACY_LOCAL_KEY);
+    if (!raw) return null;
+    const parsed = normalizeSnapshot(JSON.parse(raw));
+    if (!parsed?.routes.length) return null;
+    writeLocalNetwork(parsed);
+    return parsed;
+  } catch {
+    return null;
+  }
 }
 
 export function readLocalNetwork(): NetworkSnapshot {
@@ -32,12 +64,16 @@ export function readLocalNetwork(): NetworkSnapshot {
   try {
     const raw = window.localStorage.getItem(LOCAL_KEY);
     if (!raw) {
+      const legacy = readLegacyLocalNetwork();
+      if (legacy) return legacy;
       const seeded = seedNetworkFromStaticLines();
       window.localStorage.setItem(LOCAL_KEY, JSON.stringify(seeded));
       return seeded;
     }
     const parsed = normalizeSnapshot(JSON.parse(raw));
     if (!parsed || parsed.routes.length === 0) {
+      const legacy = readLegacyLocalNetwork();
+      if (legacy) return legacy;
       const seeded = seedNetworkFromStaticLines();
       window.localStorage.setItem(LOCAL_KEY, JSON.stringify(seeded));
       return seeded;
@@ -133,6 +169,33 @@ function stationToRow(station: ManagedStation): StationRow {
   };
 }
 
+function settingsToRow(settings: AppSettings): AppSettingsRow {
+  return {
+    id: "default",
+    show_office_hours: settings.showOfficeHours,
+    updated_at: new Date().toISOString(),
+  };
+}
+
+function rowToSettings(row: AppSettingsRow): AppSettings {
+  return { showOfficeHours: row.show_office_hours };
+}
+
+async function fetchAppSettingsFromSupabase(): Promise<AppSettings> {
+  const sb = getSupabase();
+  if (!sb) return DEFAULT_APP_SETTINGS;
+  const { data, error } = await sb.from("app_settings").select("*").eq("id", "default").maybeSingle();
+  if (error || !data) return DEFAULT_APP_SETTINGS;
+  return rowToSettings(data as AppSettingsRow);
+}
+
+async function pushAppSettingsToSupabase(settings: AppSettings): Promise<void> {
+  const sb = getSupabase();
+  if (!sb) return;
+  const { error } = await sb.from("app_settings").upsert(settingsToRow(settings), { onConflict: "id" });
+  if (error) throw error;
+}
+
 export async function fetchNetworkFromSupabase(): Promise<NetworkSnapshot | null> {
   const sb = getSupabase();
   if (!sb) return null;
@@ -160,7 +223,9 @@ export async function fetchNetworkFromSupabase(): Promise<NetworkSnapshot | null
     rowToRoute(r, (byRoute.get(r.id) ?? []).sort((a, b) => a.stationIndex - b.stationIndex)),
   );
 
-  return { version: 1, routes, updatedAt: new Date().toISOString() };
+  const settings = await fetchAppSettingsFromSupabase();
+
+  return { version: 1, routes, settings, updatedAt: new Date().toISOString() };
 }
 
 export async function pushNetworkToSupabase(snapshot: NetworkSnapshot): Promise<void> {
@@ -191,6 +256,12 @@ export async function pushNetworkToSupabase(snapshot: NetworkSnapshot): Promise<
     const { error } = await sb.from("stations").upsert(stationRows, { onConflict: "id" });
     if (error) throw error;
   }
+
+  try {
+    await pushAppSettingsToSupabase(normalizeSettings(snapshot.settings));
+  } catch (err) {
+    console.error("[Albridge] Supabase app_settings sync failed", err);
+  }
 }
 
 export async function loadNetwork(): Promise<{ snapshot: NetworkSnapshot; source: "supabase" | "local" }> {
@@ -214,7 +285,11 @@ export async function loadNetwork(): Promise<{ snapshot: NetworkSnapshot; source
 }
 
 export async function persistNetwork(snapshot: NetworkSnapshot): Promise<"supabase" | "local"> {
-  const next = { ...snapshot, updatedAt: new Date().toISOString() };
+  const next: NetworkSnapshot = {
+    ...snapshot,
+    settings: normalizeSettings(snapshot.settings),
+    updatedAt: new Date().toISOString(),
+  };
   writeLocalNetwork(next);
   if (isSupabaseConfigured) {
     try {

@@ -3,6 +3,7 @@ import { Link } from "@tanstack/react-router";
 import { motion } from "motion/react";
 import { ArrowLeft, ArrowRight, Bus, CheckCircle2, Clock3, MapPin } from "lucide-react";
 import type { Line, TrafficStatus } from "@/data/transportData";
+import { useSchedule } from "@/context/ScheduleContext";
 import { pick, useI18n } from "@/lib/i18n";
 import { cn } from "@/lib/utils";
 
@@ -160,6 +161,7 @@ const metaPillClass =
 
 export function LineHeroBanner({ line }: { line: Line }) {
   const { locale, dir, t } = useI18n();
+  const { settings } = useSchedule();
   const BackIcon = dir === "rtl" ? ArrowRight : ArrowLeft;
   const mins = estimateTripMinutes(line);
   const durationLabel = t.tripDurationApprox(`~${mins}`);
@@ -301,10 +303,12 @@ export function LineHeroBanner({ line }: { line: Line }) {
             <MapPin className="size-4 shrink-0 text-amber-400" />
             <span>{t.verifiedStops(line.stops.length)}</span>
           </div>
-          <div className={metaPillClass}>
-            <Clock3 className="size-4 shrink-0 text-sky-400" />
-            <span>{durationLabel}</span>
-          </div>
+          {settings.showOfficeHours ? (
+            <div className={metaPillClass}>
+              <Clock3 className="size-4 shrink-0 text-sky-400" />
+              <span>{durationLabel}</span>
+            </div>
+          ) : null}
           <motion.div
             animate={{ opacity: [1, 0.88, 1] }}
             transition={{ duration: 3.4, repeat: Infinity, ease: "easeInOut" }}
@@ -319,7 +323,7 @@ export function LineHeroBanner({ line }: { line: Line }) {
           </motion.div>
         </motion.div>
 
-        {line.returnDepartures && line.returnDepartures.length > 0 ? (
+        {settings.showOfficeHours && line.returnDepartures && line.returnDepartures.length > 0 ? (
           <motion.div
             initial={{ opacity: 0, y: 16 }}
             animate={{ opacity: 1, y: 0 }}

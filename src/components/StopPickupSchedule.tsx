@@ -1,5 +1,6 @@
 import { ArrowLeft, Clock3 } from "lucide-react";
 import { getPickupSlots } from "@/data/lineLectureSchedules";
+import { useSchedule } from "@/context/ScheduleContext";
 import { useI18n } from "@/lib/i18n";
 import { cn } from "@/lib/utils";
 
@@ -20,7 +21,10 @@ export function StopPickupSchedule({
   className,
 }: StopPickupScheduleProps) {
   const { t } = useI18n();
+  const { settings } = useSchedule();
   const slots = getPickupSlots(lineId, stopOrder);
+
+  if (!settings.showOfficeHours) return null;
 
   if (!slots?.length) {
     if (!departureTime) return null;
