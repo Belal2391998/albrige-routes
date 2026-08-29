@@ -13,6 +13,23 @@ import { DEFAULT_APP_SETTINGS, newId } from "@/lib/networkTypes";
 
 const LOCAL_KEY = "albridge_network_v6";
 const LEGACY_LOCAL_KEY = "albridge_network_v5";
+const SUPABASE_TIMEOUT_MS = 8000;
+
+function withTimeout<T>(promise: Promise<T>, ms: number, label: string): Promise<T> {
+  return new Promise((resolve, reject) => {
+    const timer = setTimeout(() => reject(new Error(`${label} timed out after ${ms}ms`)), ms);
+    promise.then(
+      (value) => {
+        clearTimeout(timer);
+        resolve(value);
+      },
+      (error) => {
+        clearTimeout(timer);
+        reject(error);
+      },
+    );
+  });
+}
 
 type AppSettingsRow = {
   id: string;
@@ -267,15 +284,17 @@ export async function pushNetworkToSupabase(snapshot: NetworkSnapshot): Promise<
 export async function loadNetwork(): Promise<{ snapshot: NetworkSnapshot; source: "supabase" | "local" }> {
   if (isSupabaseConfigured) {
     try {
-      const remote = await fetchNetworkFromSupabase();
+      const remote = await withTimeout(fetchNetworkFromSupabase(), SUPABASE_TIMEOUT_MS, "Supabase fetch");
       if (remote && remote.routes.length > 0) {
         writeLocalNetwork(remote);
         return { snapshot: remote, source: "supabase" };
       }
-      // First-time remote: seed then push
+      // First-time remote: return seed immediately, push in background
       const seeded = seedNetworkFromStaticLines();
-      await pushNetworkToSupabase(seeded);
       writeLocalNetwork(seeded);
+      void pushNetworkToSupabase(seeded).catch((err) => {
+        console.error("[Albridge] Supabase background seed failed", err);
+      });
       return { snapshot: seeded, source: "supabase" };
     } catch (err) {
       console.error("[Albridge] Supabase load failed, using local", err);

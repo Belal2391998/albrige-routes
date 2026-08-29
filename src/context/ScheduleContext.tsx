@@ -113,7 +113,7 @@ export function shiftDepartureTime(time: string, deltaMinutes: number): string {
 export function ScheduleProvider({ children }: { children: ReactNode }) {
   // Stable seed on server + client first paint (avoids hydration mismatch).
   const [snapshot, setSnapshot] = useState<NetworkSnapshot>(() => seedNetworkFromStaticLines());
-  const [ready, setReady] = useState(false);
+  const [ready, setReady] = useState(true);
   const [storageMode, setStorageMode] = useState<"supabase" | "local">("local");
   const [isAdminUnlocked, setIsAdminUnlocked] = useState(false);
   const snapshotRef = useRef(snapshot);

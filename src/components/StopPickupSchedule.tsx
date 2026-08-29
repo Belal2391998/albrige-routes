@@ -10,6 +10,8 @@ type StopPickupScheduleProps = {
   /** Fallback when no structured schedule exists */
   departureTime?: string;
   compact?: boolean;
+  /** When set, skips ScheduleContext lookup (avoids re-renders in lists) */
+  showOfficeHours?: boolean;
   className?: string;
 };
 
@@ -18,13 +20,15 @@ export function StopPickupSchedule({
   stopOrder,
   departureTime,
   compact = false,
+  showOfficeHours: showOfficeHoursProp,
   className,
 }: StopPickupScheduleProps) {
   const { t } = useI18n();
-  const { settings } = useSchedule();
+  const schedule = useSchedule();
+  const showOfficeHours = showOfficeHoursProp ?? schedule.settings.showOfficeHours;
   const slots = getPickupSlots(lineId, stopOrder);
 
-  if (!settings.showOfficeHours) return null;
+  if (!showOfficeHours) return null;
 
   if (!slots?.length) {
     if (!departureTime) return null;

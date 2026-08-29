@@ -155,7 +155,10 @@ function GpsTrailOverlay({
     const section = sectionRef.current;
     if (!section) return;
     const rect = section.getBoundingClientRect();
-    setSize({ w: rect.width, h: rect.height });
+    setSize((prev) => {
+      const next = { w: rect.width, h: rect.height };
+      return prev.w === next.w && prev.h === next.h ? prev : next;
+    });
 
     const next = pinRefs.current
       .map((el) => {
@@ -168,25 +171,45 @@ function GpsTrailOverlay({
       })
       .filter(Boolean) as PinPoint[];
 
-    if (next.length >= 2) setPoints(next);
+    if (next.length >= 2) {
+      setPoints((prev) => {
+        if (
+          prev.length === next.length &&
+          prev.every((p, i) => p.x === next[i]!.x && p.y === next[i]!.y)
+        ) {
+          return prev;
+        }
+        return next;
+      });
+    }
   }, [pinRefs, sectionRef]);
+
+  const rafRef = useRef<number | null>(null);
+  const scheduleMeasure = useCallback(() => {
+    if (rafRef.current != null) return;
+    rafRef.current = requestAnimationFrame(() => {
+      rafRef.current = null;
+      measure();
+    });
+  }, [measure]);
 
   useEffect(() => {
     measure();
     const section = sectionRef.current;
     if (!section) return;
 
-    const ro = new ResizeObserver(measure);
+    const ro = new ResizeObserver(scheduleMeasure);
     ro.observe(section);
-    window.addEventListener("scroll", measure, { passive: true });
-    window.addEventListener("resize", measure);
+    window.addEventListener("scroll", scheduleMeasure, { passive: true });
+    window.addEventListener("resize", scheduleMeasure);
 
     return () => {
       ro.disconnect();
-      window.removeEventListener("scroll", measure);
-      window.removeEventListener("resize", measure);
+      window.removeEventListener("scroll", scheduleMeasure);
+      window.removeEventListener("resize", scheduleMeasure);
+      if (rafRef.current != null) cancelAnimationFrame(rafRef.current);
     };
-  }, [measure, sectionRef]);
+  }, [measure, scheduleMeasure, sectionRef]);
 
   if (points.length < 2 || size.w === 0) return null;
 

@@ -69,7 +69,7 @@ function LineView({ slug }: { slug: string }) {
     if (!line) return;
     const max = Math.max(0, line.stops.length - 1);
     setActiveIndex((i) => Math.min(Math.max(0, i), max));
-  }, [slug, line]);
+  }, [slug, line?.stops.length]);
 
   if (!line) {
     return (

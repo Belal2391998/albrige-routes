@@ -1,5 +1,6 @@
 import {
   Component,
+  memo,
   useCallback,
   useEffect,
   useLayoutEffect,
@@ -19,6 +20,7 @@ import { ChevronLeft, ChevronRight, Crosshair, ExternalLink, MapPin } from "luci
 import routeBusMarker from "@/assets/route-bus-marker.png";
 import type { Line, Stop, TrafficStatus } from "@/data/transportData";
 import { StopPickupSchedule } from "@/components/StopPickupSchedule";
+import { useSchedule } from "@/context/ScheduleContext";
 import { pick, useI18n } from "@/lib/i18n";
 import { openStopInMaps } from "@/lib/mapHelpers";
 import { cn } from "@/lib/utils";
@@ -271,25 +273,37 @@ export function RouteStepper({
   onOpenStop: (stop: Stop) => void;
 }) {
   const { locale, dir, t } = useI18n();
+  const { settings } = useSchedule();
   const [nearest, setNearest] = useState<{ stop: Stop; km: number } | null>(null);
   const [locating, setLocating] = useState(false);
   const [geoError, setGeoError] = useState<string | null>(null);
   const [mapWidth, setMapWidth] = useState(640);
   const [pathLength, setPathLength] = useState(0);
-  const [busPose, setBusPose] = useState({ x: 0, y: 0, angle: 0 });
   const [stations, setStations] = useState<StationPose[]>([]);
   const [reduceMotion, setReduceMotion] = useState(false);
 
   const shellRef = useRef<HTMLDivElement>(null);
   const pathRef = useRef<SVGPathElement>(null);
+  const busRef = useRef<HTMLDivElement>(null);
+  const pathLengthRef = useRef(0);
   const cardRefs = useRef<Array<HTMLDivElement | null>>([]);
   const skipScroll = useRef(true);
+  const resizeRafRef = useRef<number | null>(null);
 
   const total = line.stops.length;
   const safeIndex = Math.min(Math.max(0, activeIndex), Math.max(0, total - 1));
   const activeStop = line.stops[safeIndex];
   const completion = total <= 1 ? 100 : Math.round((safeIndex / (total - 1)) * 100);
   const { goTo, goNext, goPrev, dockSwipe, mapSwipe } = useStepperNav(safeIndex, total, onActiveChange);
+
+  const stopDistancesKm = useMemo(() => {
+    if (!activeStop) return line.stops.map(() => null as string | null);
+    return line.stops.map((stop, i) =>
+      i === safeIndex
+        ? null
+        : haversineKm(activeStop.lat, activeStop.lng, stop.lat, stop.lng).toFixed(1),
+    );
+  }, [activeStop, line.stops, safeIndex]);
 
   const road = useMemo(() => buildDiagonalRoad(total, mapWidth), [total, mapWidth]);
   const progressMV = useMotionValue(0);
@@ -298,29 +312,41 @@ export function RouteStepper({
   useLayoutEffect(() => {
     const el = shellRef.current;
     if (!el) return;
-    const apply = () => setMapWidth(Math.max(300, Math.round(el.clientWidth)));
+    const apply = () => {
+      const width = Math.max(300, Math.round(el.clientWidth));
+      setMapWidth((prev) => (prev === width ? prev : width));
+    };
     apply();
-    const ro = new ResizeObserver(apply);
+    const ro = new ResizeObserver(() => {
+      if (resizeRafRef.current != null) return;
+      resizeRafRef.current = requestAnimationFrame(() => {
+        resizeRafRef.current = null;
+        apply();
+      });
+    });
     ro.observe(el);
-    return () => ro.disconnect();
+    return () => {
+      ro.disconnect();
+      if (resizeRafRef.current != null) cancelAnimationFrame(resizeRafRef.current);
+    };
   }, []);
 
-  const applyPose = useCallback(
-    (v: number, len: number) => {
-      const path = pathRef.current;
-      if (!path || len <= 0) return;
-      try {
-        const dist = Math.max(0, Math.min(len, v * len));
-        const pt = path.getPointAtLength(dist);
-        const look = path.getPointAtLength(Math.min(len, dist + 2));
-        const angle = (Math.atan2(look.y - pt.y, look.x - pt.x) * 180) / Math.PI;
-        setBusPose({ x: pt.x, y: pt.y, angle: Number.isFinite(angle) ? angle : 0 });
-      } catch (error) {
-        console.error("[RouteStepper] failed to pose bus", error);
-      }
-    },
-    [],
-  );
+  const applyPose = useCallback((v: number, len: number) => {
+    const path = pathRef.current;
+    const bus = busRef.current;
+    if (!path || !bus || len <= 0) return;
+    try {
+      const dist = Math.max(0, Math.min(len, v * len));
+      const pt = path.getPointAtLength(dist);
+      const look = path.getPointAtLength(Math.min(len, dist + 2));
+      const angle = (Math.atan2(look.y - pt.y, look.x - pt.x) * 180) / Math.PI;
+      bus.style.left = `${pt.x}px`;
+      bus.style.top = `${pt.y}px`;
+      bus.style.transform = `rotate(${Number.isFinite(angle) ? angle : 0}deg)`;
+    } catch (error) {
+      console.error("[RouteStepper] failed to pose bus", error);
+    }
+  }, []);
 
   useEffect(() => {
     setReduceMotion(window.matchMedia("(prefers-reduced-motion: reduce)").matches);
@@ -331,15 +357,20 @@ export function RouteStepper({
     if (!path) return;
     try {
       const len = path.getTotalLength();
+      pathLengthRef.current = len;
       setPathLength(len);
       setStations(sampleStations(path, total));
-      const target = total <= 1 ? 0 : safeIndex / (total - 1);
-      progressMV.set(target);
-      applyPose(target, len);
     } catch (error) {
       console.error("[RouteStepper] failed to measure route path", error);
     }
-  }, [road.d, total, safeIndex, applyPose, progressMV]);
+  }, [road.d, total]);
+
+  useLayoutEffect(() => {
+    if (pathLength <= 0) return;
+    const target = total <= 1 ? 0 : safeIndex / (total - 1);
+    progressMV.set(target);
+    applyPose(target, pathLength);
+  }, [safeIndex, pathLength, total, applyPose, progressMV]);
 
   useEffect(() => {
     if (pathLength <= 0) return;
@@ -362,7 +393,7 @@ export function RouteStepper({
   }, [safeIndex, pathLength, progressMV, total, applyPose]);
 
   useMotionValueEvent(progressMV, "change", (v) => {
-    applyPose(v, pathLength);
+    applyPose(v, pathLengthRef.current);
   });
 
   useEffect(() => {
@@ -553,10 +584,7 @@ export function RouteStepper({
             const stop = line.stops[i];
             if (!stop) return null;
             const status = getStopStatus(i, safeIndex);
-            const distKm =
-              i !== safeIndex
-                ? haversineKm(activeStop.lat, activeStop.lng, stop.lat, stop.lng).toFixed(1)
-                : null;
+            const distKm = stopDistancesKm[i] ?? null;
             const left = cardLeftWideHalf(
               pt.side,
               road.cardWidth,
@@ -579,7 +607,7 @@ export function RouteStepper({
                   transform: "translateY(-50%)",
                 }}
               >
-                <StopCard
+                <MemoStopCard
                   stop={stop}
                   status={status}
                   distanceKm={distKm}
@@ -587,6 +615,7 @@ export function RouteStepper({
                   index={i}
                   compact={mapWidth < 640}
                   reduceMotion={reduceMotion}
+                  showOfficeHours={settings.showOfficeHours}
                   onActivate={() => goTo(i)}
                   onOpenDetails={() => {
                     goTo(i);
@@ -602,22 +631,16 @@ export function RouteStepper({
           })}
 
           {/* Bus glides along path to the selected stop */}
-          <motion.div
+          <div
+            ref={busRef}
             className="pointer-events-none absolute z-30"
             style={{
               width: BUS_SIZE,
               height: BUS_SIZE,
-              left: busPose.x,
-              top: busPose.y,
               marginLeft: -BUS_SIZE / 2,
               marginTop: -BUS_SIZE / 2,
-              rotate: busPose.angle,
+              willChange: "transform, left, top",
             }}
-            transition={
-              reduceMotion
-                ? { duration: 0.12 }
-                : { duration: 0.5, ease: [0.42, 0, 0.58, 1] }
-            }
           >
             {/* Soft halo + pulse only on the bus */}
             <motion.span
@@ -654,7 +677,7 @@ export function RouteStepper({
                 className="size-full object-cover"
               />
             </span>
-          </motion.div>
+          </div>
         </div>
 
       </div>
@@ -735,6 +758,7 @@ function StopCard({
   index,
   compact,
   reduceMotion = false,
+  showOfficeHours,
   onActivate,
   onOpenDetails,
   onGoToMaps,
@@ -746,6 +770,7 @@ function StopCard({
   index: number;
   compact?: boolean;
   reduceMotion?: boolean;
+  showOfficeHours: boolean;
   onActivate: () => void;
   onOpenDetails: () => void;
   onGoToMaps: () => void;
@@ -835,6 +860,7 @@ function StopCard({
           stopOrder={stop.order}
           departureTime={stop.departureTime}
           compact={compact ?? false}
+          showOfficeHours={showOfficeHours}
           className="w-full"
         />
 
@@ -880,6 +906,8 @@ function StopCard({
     </motion.div>
   );
 }
+
+const MemoStopCard = memo(StopCard);
 
 type SafeRouteStepperProps = {
   line: Line;
@@ -927,7 +955,7 @@ export function SafeRouteStepper(props: SafeRouteStepperProps) {
   }
 
   return (
-    <StepperErrorBoundary>
+    <StepperErrorBoundary key={props.line.slug}>
       <RouteStepper {...props} />
     </StepperErrorBoundary>
   );
