@@ -1,7 +1,8 @@
 import { Suspense, lazy } from "react";
 import { AnimatePresence, motion } from "motion/react";
-import { Clock3, MapPin, Navigation, X } from "lucide-react";
+import { MapPin, Navigation, X } from "lucide-react";
 import type { Stop, TrafficStatus } from "@/data/transportData";
+import { StopPickupSchedule } from "@/components/StopPickupSchedule";
 import { pick, useI18n } from "@/lib/i18n";
 import { stopNavigationUrl } from "@/lib/mapHelpers";
 import { cn } from "@/lib/utils";
@@ -78,11 +79,15 @@ export function StopModal({
               className="h-48 w-full rounded-2xl object-cover"
             />
 
+            <div className="mt-3">
+              <StopPickupSchedule
+                lineId={stop.lineId}
+                stopOrder={stop.order}
+                departureTime={stop.departureTime}
+              />
+            </div>
+
             <div className="mt-3 flex flex-wrap items-center gap-2">
-              <span className="inline-flex items-center gap-1.5 rounded-full border border-border bg-secondary px-3 py-1 text-xs font-bold text-foreground">
-                <Clock3 className="size-3.5 text-amber-500" />
-                {stop.departureTime}
-              </span>
               <span
                 className={cn(
                   "inline-flex items-center rounded-full border px-3 py-1 text-xs font-extrabold",
@@ -97,12 +102,6 @@ export function StopModal({
               <MapPin className="mt-0.5 size-4 shrink-0" style={{ color }} />
               {pick(stop.landmarkDescription, locale)}
             </p>
-
-            {stop.adminNote ? (
-              <p className="mt-2 rounded-2xl border border-amber-500/20 bg-amber-500/5 px-3 py-2 text-sm font-medium text-foreground">
-                {stop.adminNote}
-              </p>
-            ) : null}
 
             <div className="mt-3 overflow-hidden rounded-2xl border border-border">
               <Suspense fallback={<div className="h-48 w-full animate-pulse bg-secondary" />}>

@@ -10,7 +10,7 @@ import type {
 } from "@/lib/networkTypes";
 import { newId } from "@/lib/networkTypes";
 
-const LOCAL_KEY = "albridge_network_v4";
+const LOCAL_KEY = "albridge_network_v5";
 
 function emptySnapshot(): NetworkSnapshot {
   return { version: 1, routes: [], updatedAt: new Date().toISOString() };

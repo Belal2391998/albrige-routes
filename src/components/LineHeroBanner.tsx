@@ -318,6 +318,33 @@ export function LineHeroBanner({ line }: { line: Line }) {
             <span>{trafficLabel}</span>
           </motion.div>
         </motion.div>
+
+        {line.returnDepartures && line.returnDepartures.length > 0 ? (
+          <motion.div
+            initial={{ opacity: 0, y: 16 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.5, delay: 0.48, ease: [0.22, 1, 0.36, 1] }}
+            className="mt-5 w-full max-w-xl rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-center backdrop-blur-md"
+          >
+            <p className="mb-2 text-xs font-extrabold tracking-wide text-amber-300/95 sm:text-sm">
+              {t.returnDeparturesTitle}
+            </p>
+            <div className="flex flex-wrap items-center justify-center gap-2">
+              {line.returnDepartures.map((time) => (
+                <span
+                  key={time}
+                  className="inline-flex items-center gap-1.5 rounded-xl border border-amber-400/35 bg-amber-500/10 px-3 py-1.5 text-sm font-bold tabular-nums text-amber-100"
+                >
+                  <Clock3 className="size-3.5 shrink-0 text-amber-400" />
+                  {time}
+                </span>
+              ))}
+            </div>
+            {line.id === 4 ? (
+              <p className="mt-2 text-[11px] font-medium text-slate-300/80">{t.returnDeparturesSaltNote}</p>
+            ) : null}
+          </motion.div>
+        ) : null}
       </div>
     </section>
   );

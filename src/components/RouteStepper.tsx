@@ -15,9 +15,10 @@ import {
   useMotionValue,
   useMotionValueEvent,
 } from "motion/react";
-import { ChevronLeft, ChevronRight, Clock3, Crosshair, ExternalLink, MapPin } from "lucide-react";
+import { ChevronLeft, ChevronRight, Crosshair, ExternalLink, MapPin } from "lucide-react";
 import routeBusMarker from "@/assets/route-bus-marker.png";
 import type { Line, Stop, TrafficStatus } from "@/data/transportData";
+import { StopPickupSchedule } from "@/components/StopPickupSchedule";
 import { pick, useI18n } from "@/lib/i18n";
 import { openStopInMaps } from "@/lib/mapHelpers";
 import { cn } from "@/lib/utils";
@@ -824,18 +825,12 @@ function StopCard({
       </div>
 
       <div className="mt-2.5 flex flex-col items-stretch gap-1.5 text-start" dir="rtl">
-        <span
-          className={cn(
-            "inline-flex w-fit max-w-full items-center gap-2 rounded-full border border-amber-400/40 bg-gradient-to-l from-amber-500/20 to-amber-400/5 font-bold text-slate-900 shadow-sm dark:border-amber-400/30 dark:text-amber-100",
-            compact ? "px-2.5 py-1 text-sm" : "px-3.5 py-1.5 text-base sm:text-lg",
-          )}
-        >
-          <Clock3
-            className={cn("shrink-0 text-amber-500", compact ? "size-4" : "size-5")}
-            strokeWidth={2.5}
-          />
-          <span className="tabular-nums tracking-wide">{stop.departureTime}</span>
-        </span>
+        <StopPickupSchedule
+          lineId={stop.lineId}
+          stopOrder={stop.order}
+          departureTime={stop.departureTime}
+          compact={compact ?? false}
+        />
 
         <div className="flex flex-wrap items-center gap-1.5">
           {distanceKm ? (
@@ -864,12 +859,6 @@ function StopCard({
           )}
         </div>
       </div>
-
-      {stop.adminNote ? (
-        <p className="mt-2 line-clamp-2 text-[11px] font-medium leading-snug text-slate-500 dark:text-slate-400">
-          {stop.adminNote}
-        </p>
-      ) : null}
 
       <button
         type="button"

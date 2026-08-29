@@ -1,3 +1,4 @@
+import { getReturnDepartures } from "@/data/lineLectureSchedules";
 import { lines, type Line } from "@/data/transportData";
 import type { Localized } from "@/lib/i18n";
 import type { ManagedRoute, ManagedStation, NetworkSnapshot } from "@/lib/networkTypes";
@@ -80,6 +81,9 @@ export function managedRouteToLine(route: ManagedRoute): Line {
         trafficStatus: s.status,
         adminNote: s.notes,
       })),
+    returnDepartures: getReturnDepartures(
+      Number.isFinite(numericId) ? numericId : route.displayOrder,
+    ),
   };
 }
 

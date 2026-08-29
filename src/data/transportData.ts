@@ -16,6 +16,12 @@ import fleetBus4735 from "@/assets/fleet-bus-4735.jpg";
 import fleetBus4848 from "@/assets/fleet-bus-4848.jpg";
 import fleetBus9945 from "@/assets/fleet-bus-9945.jpg";
 import type { Localized } from "@/lib/i18n";
+import {
+  getReturnDepartures,
+  lectureScheduleNote,
+  lectureSchedulesByLineId,
+  toDisplayTime,
+} from "@/data/lineLectureSchedules";
 
 export type TrafficStatus = "clear" | "moderate" | "congested";
 
@@ -42,6 +48,8 @@ export interface Line {
   badge: Localized;
   color: string;
   stops: Stop[];
+  /** Afternoon return departures from campus (display-ready) */
+  returnDepartures?: string[];
 }
 
 const stopImages = [fleetBoarding, fleetRoad, heroFleet, fleetInterior];
@@ -61,36 +69,41 @@ type RawStop = [
 ];
 
 function buildStops(lineId: number, raw: RawStop[]): Stop[] {
-  return raw.map(([nameAr, nameEn, lat, lng, landmarkAr, landmarkEn, departureTime, mapsUrlOverride], i) => ({
-    id: `line-${lineId}-stop-${i + 1}`,
-    name: { ar: nameAr, en: nameEn },
-    lineId,
-    order: i + 1,
-    lat,
-    lng,
-    imageUrl: stopImages[(lineId + i) % stopImages.length] ?? stopImages[0]!,
-    landmarkDescription: { ar: landmarkAr, en: landmarkEn },
-    googleMapsUrl: mapsUrlOverride ?? mapsUrl(lat, lng),
-    departureTime,
-  }));
+  const schedules = lectureSchedulesByLineId[lineId];
+  return raw.map(([nameAr, nameEn, lat, lng, landmarkAr, landmarkEn, departureTime, mapsUrlOverride], i) => {
+    const lectureTimes = schedules?.[i];
+    return {
+      id: `line-${lineId}-stop-${i + 1}`,
+      name: { ar: nameAr, en: nameEn },
+      lineId,
+      order: i + 1,
+      lat,
+      lng,
+      imageUrl: stopImages[(lineId + i) % stopImages.length] ?? stopImages[0]!,
+      landmarkDescription: { ar: landmarkAr, en: landmarkEn },
+      googleMapsUrl: mapsUrlOverride ?? mapsUrl(lat, lng),
+      departureTime: lectureTimes ? toDisplayTime(lectureTimes[0]) : departureTime,
+      ...(lectureTimes ? { adminNote: lectureScheduleNote(lectureTimes) } : {}),
+    };
+  });
 }
 
 export const lines: Line[] = [
   {
     id: 1,
     slug: "line-1",
-    title: { ar: "خط التطبيقية - أبو نصير", en: "Tatbiqiyya – Abu Nseir Line" },
-    subtitle: { ar: "من مسجد أبو نصير الكبير وحتى طريق المطار", en: "From Abu Nseir Grand Mosque to Airport Road" },
+    title: { ar: "خط أبو نصير", en: "Abu Nseir Line" },
+    subtitle: { ar: "من مسجد أبو نصير الكبير وحتى كازية المناصير", en: "From Abu Nseir Grand Mosque to Manaseer Station" },
     badge: { ar: "الخط الأول", en: "Line 1" },
     color: "#0B2265",
     stops: buildStops(1, [
       [
-        "مسجد أبو نصير الكبير (بنك صفوة)",
-        "Abu Nseir Grand Mosque (Safwa Bank)",
+        "مسجد أبو نصير الكبير",
+        "Abu Nseir Grand Mosque",
         32.051836,
         35.881074,
-        "بجانب مسجد أبو نصير الكبير قرب بنك صفوة",
-        "Beside Abu Nseir Grand Mosque near Safwa Bank",
+        "بجانب مسجد أبو نصير الكبير",
+        "Beside Abu Nseir Grand Mosque",
         "07:00 AM",
         "https://maps.app.goo.gl/dj1oUNbuQnK7DPXY7?g_st=aw",
       ],
@@ -167,8 +180,8 @@ export const lines: Line[] = [
         "07:45 AM",
       ],
       [
-        "طريق المطار (كازية المناصير)",
-        "Airport Road (Manaseer Station)",
+        "كازية المناصير (جسر المشاة)",
+        "Manaseer Station (pedestrian bridge)",
         31.919624,
         35.859053,
         "بجانب محطة المناصير عند جسر المشاة",
@@ -180,14 +193,14 @@ export const lines: Line[] = [
   {
     id: 2,
     slug: "line-2",
-    title: { ar: "خط الجامعة الأردنية", en: "University of Jordan Line" },
-    subtitle: { ar: "من الجامعة الأردنية وحتى طريق المطار", en: "From the University of Jordan to Airport Road" },
+    title: { ar: "خط الاستشارات", en: "Consultations Line" },
+    subtitle: { ar: "من الاستشارات وحتى كازية المناصير", en: "From Consultations building to Manaseer Station" },
     badge: { ar: "الخط الثاني", en: "Line 2" },
     color: "#E5A93C",
     stops: buildStops(2, [
       [
-        "الجامعة الأردنية (الاستشارات)",
-        "University of Jordan (Consultations)",
+        "الاستشارات",
+        "Consultations Building",
         32.022712,
         35.873373,
         "عند مبنى الاستشارات في الجامعة الأردنية",
@@ -195,17 +208,17 @@ export const lines: Line[] = [
         "07:00 AM",
       ],
       [
-        "الجامعة الأردنية (مستشفى الإسراء)",
-        "University of Jordan (Al-Isra Hospital)",
+        "مستشفى الإسراء",
+        "Al-Isra Hospital",
         32.01731,
         35.86593,
-        "مقابل مستشفى الإسراء قرب الجامعة الأردنية",
-        "Opposite Al-Isra Hospital near the University of Jordan",
+        "مقابل مستشفى الإسراء",
+        "Opposite Al-Isra Hospital",
         "07:05 AM",
       ],
       [
-        "كازية توتال (الجامعة)",
-        "Total Station (University)",
+        "كازية توتال (شارع الجامعة)",
+        "Total Station (University Street)",
         32.005778,
         35.87265,
         "كازية توتال على شارع الجامعة",
@@ -213,8 +226,8 @@ export const lines: Line[] = [
         "07:10 AM",
       ],
       [
-        "جسر المشاة (مقابل مستشفى ابن الهيثم)",
-        "Pedestrian bridge (opposite Ibn Al-Haytham Hospital)",
+        "مقابل مستشفى ابن الهيثم (جسر المشاة)",
+        "Opposite Ibn Al-Haytham Hospital (pedestrian bridge)",
         31.998518,
         35.872352,
         "تحت جسر المشاة مقابل مستشفى ابن الهيثم",
@@ -222,8 +235,8 @@ export const lines: Line[] = [
         "07:18 AM",
       ],
       [
-        "دوار الواحة (حلويات حبيبة)",
-        "Al-Waha Roundabout (Habibeh Sweets)",
+        "دوار الواحة (حبيبة)",
+        "Al-Waha Roundabout (Habibeh)",
         31.98867,
         35.866872,
         "عند دوار الواحة قرب حلويات حبيبة",
@@ -240,7 +253,7 @@ export const lines: Line[] = [
         "07:32 AM",
       ],
       [
-        "السابع (دوار سيفوي)",
+        "السابع (دوار السيفوي)",
         "7th Circle (Safeway Roundabout)",
         31.954169,
         35.857338,
@@ -249,8 +262,8 @@ export const lines: Line[] = [
         "07:40 AM",
       ],
       [
-        "السابع (كازية جولف)",
-        "7th Circle (Golf Station)",
+        "كازية جولف (السابع)",
+        "Golf Station (7th Circle)",
         31.942379,
         35.857223,
         "بجانب كازية جولف في السابع",
@@ -258,8 +271,8 @@ export const lines: Line[] = [
         "07:45 AM",
       ],
       [
-        "طريق المطار (كازية المناصير)",
-        "Airport Road (Manaseer Station)",
+        "كازية المناصير (جسر المشاة)",
+        "Manaseer Station (pedestrian bridge)",
         31.919624,
         35.859053,
         "بجانب محطة المناصير عند جسر المشاة",
@@ -271,7 +284,7 @@ export const lines: Line[] = [
   {
     id: 3,
     slug: "line-3",
-    title: { ar: "خط عريفة مول - طبربور - مرج الحمام", en: "Areefa Mall – Tabarbour – Marj Al-Hamam Line" },
+    title: { ar: "خط عريفة مول", en: "Areefa Mall Line" },
     subtitle: { ar: "من عريفة مول وحتى محمص الشعب على طريق السلام", en: "From Areefa Mall to Al-Shaab Nuts Shop on Al-Salam Road" },
     badge: { ar: "الخط الثالث", en: "Line 3" },
     color: "#0EA5A5",
@@ -286,8 +299,8 @@ export const lines: Line[] = [
         "07:00 AM",
       ],
       [
-        "كازية Go (قبل مجمع الشمال)",
-        "Go Station (before North Complex)",
+        "كازية Go (مجمع الشمال)",
+        "Go Station (North Complex)",
         31.993998,
         35.921451,
         "محطة Go قبل مجمع الشمال",
@@ -304,8 +317,8 @@ export const lines: Line[] = [
         "07:14 AM",
       ],
       [
-        "دوار الداخلية (مجمع بنك الإسكان)",
-        "Interior Ministry Roundabout (Housing Bank Complex)",
+        "الداخلية (مجمع بنك الإسكان)",
+        "Interior Ministry (Housing Bank Complex)",
         31.970882,
         35.907258,
         "بجانب مجمع بنك الإسكان",
@@ -340,22 +353,13 @@ export const lines: Line[] = [
         "07:40 AM",
       ],
       [
-        "كوردور عبدون (كازية جو بترول)",
-        "Abdoun Corridor (Jo Petrol Station)",
+        "كوريدور عبدون (كازية جوبيترول)",
+        "Abdoun Corridor (Jopetrol Station)",
         31.92716,
         35.876121,
         "محطة جو بترول على كوردور عبدون",
         "Jo Petrol station on Abdoun Corridor",
         "07:46 AM",
-      ],
-      [
-        "مرج الحمام (إشارات الكنيسة)",
-        "Marj Al-Hamam (Church traffic lights)",
-        31.898829,
-        35.858485,
-        "عند إشارات الكنيسة في مرج الحمام",
-        "At the church traffic lights in Marj Al-Hamam",
-        "07:53 AM",
       ],
       [
         "مرج الحمام (دوار البرديني)",
@@ -364,7 +368,16 @@ export const lines: Line[] = [
         35.846609,
         "عند دوار البرديني في مرج الحمام",
         "At Al-Bardini Roundabout in Marj Al-Hamam",
-        "07:58 AM",
+        "07:45 AM",
+      ],
+      [
+        "مرج الحمام (إشارات الكنيسة)",
+        "Marj Al-Hamam (Church traffic lights)",
+        31.898829,
+        35.858485,
+        "عند إشارات الكنيسة في مرج الحمام",
+        "At the church traffic lights in Marj Al-Hamam",
+        "07:50 AM",
       ],
       [
         "محمص الشعب (طريق السلام)",
@@ -381,17 +394,17 @@ export const lines: Line[] = [
     id: 4,
     slug: "line-4",
     title: { ar: "خط السلط", en: "Salt Line" },
-    subtitle: { ar: "من موقف جامعة البلقاء وحتى دوار الكمالية", en: "From Al-Balqa University stop to Al-Kamaliya Roundabout" },
+    subtitle: { ar: "من مثلث جامعة البلقاء وحتى دوار الكمالية", en: "From Al-Balqa University triangle to Al-Kamaliya Roundabout" },
     badge: { ar: "الخط الرابع", en: "Line 4" },
     color: "#7C3AED",
     stops: buildStops(4, [
       [
-        "موقف جامعة البلقاء",
-        "Al-Balqa University Stop",
+        "مثلث جامعة البلقاء",
+        "Al-Balqa University Triangle",
         32.021845,
         35.713487,
-        "موقف جامعة البلقاء التطبيقية",
-        "Al-Balqa Applied University bus stop",
+        "مثلث جامعة البلقاء التطبيقية",
+        "Al-Balqa Applied University triangle",
         "07:00 AM",
         "https://maps.app.goo.gl/7YNEies2FAHa2LpK8?g_st=aw",
       ],
@@ -426,12 +439,12 @@ export const lines: Line[] = [
         "https://maps.app.goo.gl/HEjV7NFpSvUsDRjY6?g_st=aw",
       ],
       [
-        "المدينة الرياضية",
-        "Sports City",
+        "مثلث المدينة الرياضية",
+        "Sports City Triangle",
         32.060516,
         35.701256,
-        "عند المدينة الرياضية",
-        "At Sports City",
+        "عند مثلث المدينة الرياضية",
+        "At Sports City triangle",
         "07:30 AM",
         "https://maps.app.goo.gl/iHNsYTDDnpuc6jL47?g_st=aw",
       ],
@@ -446,8 +459,8 @@ export const lines: Line[] = [
         "https://maps.app.goo.gl/KJ9by3ZuxU3PcSCr7?g_st=aw",
       ],
       [
-        "الدفاع المدني",
-        "Civil Defense",
+        "إشارة الدفاع المدني",
+        "Civil Defense Traffic Light",
         32.063353,
         35.737843,
         "عند إشارة الدفاع المدني",
@@ -456,12 +469,12 @@ export const lines: Line[] = [
         "https://maps.app.goo.gl/E6AS1PCsQZPzVtfaA?g_st=aw",
       ],
       [
-        "الدبابنة",
-        "Al-Dababneh",
+        "جسر الدبابنة",
+        "Al-Dababneh Bridge",
         32.057433,
         35.747394,
-        "عند الدبابنة",
-        "At Al-Dababneh",
+        "عند جسر الدبابنة",
+        "At Al-Dababneh Bridge",
         "07:48 AM",
         "https://maps.app.goo.gl/vRPmrruaTCuc5cxn8?g_st=aw",
       ],
@@ -632,7 +645,11 @@ export const lines: Line[] = [
     ]),
   },
 ];
-export const getLineBySlug = (slug: string) => lines.find((l) => l.slug === slug);
+export const getLineBySlug = (slug: string) => {
+  const line = lines.find((l) => l.slug === slug);
+  if (!line) return undefined;
+  return { ...line, returnDepartures: getReturnDepartures(line.id) };
+};
 
 export type LineCardMeta = {
   slug: string;
@@ -649,11 +666,11 @@ export type LineCardMeta = {
 export const lineCardMeta: LineCardMeta[] = [
   {
     slug: "line-1",
-    heading: { ar: "خط التطبيقية — أبو نصير", en: "Tatbiqiyya — Abu Nseir Line" },
+    heading: { ar: "خط أبو نصير", en: "Abu Nseir Line" },
     badgeText: { ar: "الخط الأول • 10 محطات تجمع", en: "Line 1 • 10 pickup stops" },
     pathSnippet: {
-      ar: "مسجد أبو نصير ⟵ صويلح ⟵ حدائق الحسين ⟵ طريق المطار",
-      en: "Abu Nseir Mosque ← Sweileh ← King Hussein Parks ← Airport Road",
+      ar: "مسجد أبو نصير ⟵ صويلح ⟵ حدائق الحسين ⟵ كازية المناصير",
+      en: "Abu Nseir Mosque ← Sweileh ← King Hussein Parks ← Manaseer Station",
     },
     accentGradient: "from-[#0A2240] to-[#0B2265]",
     badgeStyle: "bg-[#0A2240]/10 text-[#0A2240] dark:bg-white/10 dark:text-slate-100",
@@ -663,11 +680,11 @@ export const lineCardMeta: LineCardMeta[] = [
   },
   {
     slug: "line-2",
-    heading: { ar: "خط الجامعة الأردنية", en: "University of Jordan Line" },
+    heading: { ar: "خط الاستشارات", en: "Consultations Line" },
     badgeText: { ar: "الخط الثاني • 9 محطات تجمع", en: "Line 2 • 9 pickup stops" },
     pathSnippet: {
-      ar: "الجامعة الأردنية ⟵ دوار الواحة ⟵ دوار سيفوي ⟵ طريق المطار",
-      en: "University of Jordan ← Al-Waha ← Safeway Roundabout ← Airport Road",
+      ar: "الاستشارات ⟵ دوار الواحة ⟵ السابع ⟵ كازية المناصير",
+      en: "Consultations ← Al-Waha ← 7th Circle ← Manaseer Station",
     },
     accentGradient: "from-[#0A2240] to-[#0B2265]",
     badgeStyle: "bg-[#0A2240]/10 text-[#0A2240] dark:bg-white/10 dark:text-slate-100",
@@ -677,7 +694,7 @@ export const lineCardMeta: LineCardMeta[] = [
   },
   {
     slug: "line-3",
-    heading: { ar: "خط عريفة مول — مرج الحمام", en: "Areefa Mall — Marj Al-Hamam Line" },
+    heading: { ar: "خط عريفة مول", en: "Areefa Mall Line" },
     badgeText: { ar: "الخط الثالث • 11 محطة تجمع", en: "Line 3 • 11 pickup stops" },
     pathSnippet: {
       ar: "عريفة مول ⟵ دوار عبدون ⟵ تاج مول ⟵ محمص الشعب",
@@ -691,11 +708,11 @@ export const lineCardMeta: LineCardMeta[] = [
   },
   {
     slug: "line-4",
-    heading: { ar: "خط السلط — صويلح", en: "Salt — Sweileh Line" },
+    heading: { ar: "خط السلط", en: "Salt Line" },
     badgeText: { ar: "الخط الرابع • 11 محطة تجمع", en: "Line 4 • 11 pickup stops" },
     pathSnippet: {
-      ar: "موقف جامعة البلقاء ⟵ جسر الدباس ⟵ إشارة عين الباشا ⟵ دوار الكمالية",
-      en: "Al-Balqa University Stop ← Al-Dabbas Bridge ← Ain Al-Basha ← Al-Kamaliya",
+      ar: "مثلث جامعة البلقاء ⟵ جسر الدباس ⟵ إشارة عين الباشا ⟵ دوار الكمالية",
+      en: "Al-Balqa University ← Al-Dabbas Bridge ← Ain Al-Basha ← Al-Kamaliya",
     },
     accentGradient: "from-[#0A2240] to-[#0B2265]",
     badgeStyle: "bg-[#0A2240]/10 text-[#0A2240] dark:bg-white/10 dark:text-slate-100",
