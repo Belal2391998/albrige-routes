@@ -10,12 +10,7 @@ import {
   type PointerEvent as ReactPointerEvent,
   type ReactNode,
 } from "react";
-import {
-  animate,
-  motion,
-  useMotionValue,
-  useMotionValueEvent,
-} from "motion/react";
+import { animate, motion, useMotionValue, useMotionValueEvent } from "motion/react";
 import { ChevronLeft, ChevronRight, Crosshair, ExternalLink, MapPin } from "lucide-react";
 import routeBusMarker from "@/assets/route-bus-marker.png";
 import type { Line, Stop, TrafficStatus } from "@/data/transportData";
@@ -25,15 +20,20 @@ import { pick, useI18n } from "@/lib/i18n";
 import { openStopInMaps } from "@/lib/mapHelpers";
 import { cn } from "@/lib/utils";
 
-function trafficLabel(status: TrafficStatus | undefined, t: { trafficClear: string; trafficModerate: string; trafficCongested: string }) {
+function trafficLabel(
+  status: TrafficStatus | undefined,
+  t: { trafficClear: string; trafficModerate: string; trafficCongested: string },
+) {
   if (status === "moderate") return t.trafficModerate;
   if (status === "congested") return t.trafficCongested;
   return t.trafficClear;
 }
 
 function trafficTone(status: TrafficStatus | undefined) {
-  if (status === "moderate") return "border-amber-500/40 bg-amber-500/10 text-amber-700 dark:text-amber-300";
-  if (status === "congested") return "border-rose-500/40 bg-rose-500/10 text-rose-700 dark:text-rose-300";
+  if (status === "moderate")
+    return "border-amber-500/40 bg-amber-500/10 text-amber-700 dark:text-amber-300";
+  if (status === "congested")
+    return "border-rose-500/40 bg-rose-500/10 text-rose-700 dark:text-rose-300";
   return "border-emerald-500/40 bg-emerald-500/10 text-emerald-700 dark:text-emerald-300";
 }
 
@@ -74,7 +74,9 @@ function haversineKm(aLat: number, aLng: number, bLat: number, bLng: number) {
 }
 
 function reducedMotion() {
-  return typeof window !== "undefined" && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+  return (
+    typeof window !== "undefined" && window.matchMedia("(prefers-reduced-motion: reduce)").matches
+  );
 }
 
 /**
@@ -126,7 +128,14 @@ function buildDiagonalRoad(count: number, width: number): RoadGeometry {
     d += ` C ${cp1x.toFixed(2)} ${cp1y.toFixed(2)}, ${cp2x.toFixed(2)} ${cp2y.toFixed(2)}, ${p2.x.toFixed(2)} ${p2.y.toFixed(2)}`;
   }
 
-  return { d, width, height, cardWidth: Math.max(narrow ? 118 : 128, cardWidth), edgePad, roadClearance };
+  return {
+    d,
+    width,
+    height,
+    cardWidth: Math.max(narrow ? 118 : 128, cardWidth),
+    edgePad,
+    roadClearance,
+  };
 }
 
 /** Strict zigzag: 1st left, 2nd right, 3rd left… */
@@ -205,7 +214,8 @@ function useStepperNav(activeIndex: number, total: number, onActiveChange: (i: n
       const el = e.target;
       if (el instanceof HTMLElement) {
         const tag = el.tagName;
-        if (tag === "INPUT" || tag === "TEXTAREA" || tag === "SELECT" || el.isContentEditable) return;
+        if (tag === "INPUT" || tag === "TEXTAREA" || tag === "SELECT" || el.isContentEditable)
+          return;
       }
       if (e.key === "ArrowDown" || e.key === "ArrowRight") {
         e.preventDefault();
@@ -277,12 +287,16 @@ export function RouteStepper({
   const [nearest, setNearest] = useState<{ stop: Stop; km: number } | null>(null);
   const [locating, setLocating] = useState(false);
   const [geoError, setGeoError] = useState<string | null>(null);
-  const [mapWidth, setMapWidth] = useState(640);
+  const [mapWidth, setMapWidth] = useState(() =>
+    typeof window !== "undefined" ? Math.max(300, window.innerWidth) : 390,
+  );
   const [pathLength, setPathLength] = useState(0);
   const [stations, setStations] = useState<StationPose[]>([]);
   const [reduceMotion, setReduceMotion] = useState(false);
 
   const shellRef = useRef<HTMLDivElement>(null);
+  const carouselRef = useRef<HTMLDivElement>(null);
+  const pillStripRef = useRef<HTMLDivElement>(null);
   const pathRef = useRef<SVGPathElement>(null);
   const busRef = useRef<HTMLDivElement>(null);
   const pathLengthRef = useRef(0);
@@ -292,9 +306,15 @@ export function RouteStepper({
 
   const total = line.stops.length;
   const safeIndex = Math.min(Math.max(0, activeIndex), Math.max(0, total - 1));
+  const activeIndexRef = useRef(safeIndex);
+  activeIndexRef.current = safeIndex;
   const activeStop = line.stops[safeIndex];
   const completion = total <= 1 ? 100 : Math.round((safeIndex / (total - 1)) * 100);
-  const { goTo, goNext, goPrev, dockSwipe, mapSwipe } = useStepperNav(safeIndex, total, onActiveChange);
+  const { goTo, goNext, goPrev, dockSwipe, mapSwipe } = useStepperNav(
+    safeIndex,
+    total,
+    onActiveChange,
+  );
 
   const stopDistancesKm = useMemo(() => {
     if (!activeStop) return line.stops.map(() => null as string | null);
@@ -306,6 +326,7 @@ export function RouteStepper({
   }, [activeStop, line.stops, safeIndex]);
 
   const road = useMemo(() => buildDiagonalRoad(total, mapWidth), [total, mapWidth]);
+  const isMobileLayout = mapWidth < 640;
   const progressMV = useMotionValue(0);
   const roadStroke = mapWidth < 560 ? 26 : 34;
 
@@ -379,9 +400,7 @@ export function RouteStepper({
       const controls = animate(
         progressMV,
         target,
-        reducedMotion()
-          ? { duration: 0.15 }
-          : { duration: 0.5, ease: [0.42, 0, 0.58, 1] },
+        reducedMotion() ? { duration: 0.15 } : { duration: 0.5, ease: [0.42, 0, 0.58, 1] },
       );
       return () => controls.stop();
     } catch (error) {
@@ -403,8 +422,54 @@ export function RouteStepper({
       skipScroll.current = false;
       return;
     }
-    el.scrollIntoView({ behavior: reducedMotion() ? "auto" : "smooth", block: "center" });
-  }, [safeIndex]);
+    el.scrollIntoView({
+      behavior: reducedMotion() ? "auto" : "smooth",
+      block: isMobileLayout ? "nearest" : "center",
+      inline: isMobileLayout ? "center" : "nearest",
+    });
+  }, [safeIndex, isMobileLayout]);
+
+  useEffect(() => {
+    if (!isMobileLayout) return;
+    const pill = pillStripRef.current?.querySelector<HTMLElement>(
+      `[data-pill-index="${safeIndex}"]`,
+    );
+    pill?.scrollIntoView({
+      behavior: reducedMotion() ? "auto" : "smooth",
+      block: "nearest",
+      inline: "center",
+    });
+  }, [safeIndex, isMobileLayout, reduceMotion]);
+
+  useEffect(() => {
+    if (!isMobileLayout) return;
+    const root = carouselRef.current;
+    if (!root) return;
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        let best: { index: number; ratio: number } | null = null;
+        for (const entry of entries) {
+          if (!entry.isIntersecting) continue;
+          const idx = Number((entry.target as HTMLElement).dataset["cardIndex"]);
+          if (!Number.isFinite(idx)) continue;
+          if (!best || entry.intersectionRatio > best.ratio) {
+            best = { index: idx, ratio: entry.intersectionRatio };
+          }
+        }
+        if (best && best.index !== activeIndexRef.current) {
+          skipScroll.current = true;
+          onActiveChange(best.index);
+        }
+      },
+      { root, threshold: [0.45, 0.6, 0.75] },
+    );
+
+    cardRefs.current.forEach((node) => {
+      if (node) observer.observe(node);
+    });
+    return () => observer.disconnect();
+  }, [isMobileLayout, line.stops.length, onActiveChange]);
 
   const findNearest = () => {
     if (!("geolocation" in navigator)) {
@@ -444,255 +509,413 @@ export function RouteStepper({
   }
 
   return (
-    <div className="relative w-full min-w-full overflow-hidden bg-transparent transition-colors">
+    <div
+      ref={shellRef}
+      className="relative w-full min-w-full overflow-hidden bg-transparent transition-colors"
+    >
       <div className="relative z-10 w-full min-w-full px-6 md:px-12">
-      <div
-        className="w-full max-w-none overflow-hidden border-y border-slate-200/40 bg-white/45 py-4 backdrop-blur-xl dark:border-slate-800/40 dark:bg-slate-950/40 sm:py-5"
-        {...mapSwipe}
-      >
-        <div className="relative z-30 mb-5 flex w-full max-w-none flex-wrap items-center justify-between gap-3">
-          <p className="min-w-0 truncate text-xs font-bold text-slate-500 dark:text-slate-400">
-            {t.stopProgress(safeIndex + 1, total, pick(activeStop.name, locale))}
-          </p>
-          <button
-            type="button"
-            onClick={findNearest}
-            disabled={locating}
-            className="relative z-30 flex items-center gap-2 rounded-full bg-amber-500 px-4 py-2 text-xs font-extrabold text-slate-950 shadow-lg shadow-amber-500/25 disabled:opacity-60"
-          >
-            <Crosshair className={cn("size-4", locating && "animate-spin")} />
-            {locating ? t.locating : t.nearest}
-          </button>
-        </div>
-
-        {nearest && (
-          <p className="relative z-30 mb-4 rounded-xl border border-amber-500/20 bg-amber-500/10 px-4 py-2 text-xs font-bold text-amber-800 dark:text-amber-300">
-            {t.nearestResult(pick(nearest.stop.name, locale), nearest.km.toFixed(1))}
-          </p>
-        )}
-        {geoError && (
-          <p className="relative z-30 mb-4 rounded-xl border border-destructive/40 px-4 py-2 text-xs text-destructive">{geoError}</p>
-        )}
-
         <div
-          ref={shellRef}
-          className="relative z-0 touch-pan-y overflow-x-clip overflow-y-visible pt-2"
-          style={{ height: road.height, minHeight: road.height }}
+          className="w-full max-w-none overflow-hidden border-y border-slate-200/40 bg-white/45 py-4 backdrop-blur-xl dark:border-slate-800/40 dark:bg-slate-950/40 sm:py-5"
+          {...mapSwipe}
         >
-          <svg
-            className="pointer-events-none absolute inset-0 h-full w-full overflow-visible"
-            width={road.width}
-            height={road.height}
-            viewBox={`0 0 ${road.width} ${road.height}`}
-            preserveAspectRatio="xMidYMin meet"
-            aria-hidden
-          >
-            {/* Soft terrain wash under the highway */}
-            <path
-              d={road.d}
-              fill="none"
-              stroke="rgb(148 163 184 / 0.18)"
-              strokeWidth={roadStroke + 18}
-              strokeLinecap="round"
-              strokeLinejoin="round"
-            />
-
-            {/* Asphalt highway — uniform, no progress fill */}
-            <path
-              d={road.d}
-              fill="none"
-              stroke={ASPHALT}
-              strokeWidth={roadStroke}
-              strokeLinecap="round"
-              strokeLinejoin="round"
-            />
-            <path
-              d={road.d}
-              fill="none"
-              stroke="rgb(51 65 85 / 0.9)"
-              strokeWidth={roadStroke - 8}
-              strokeLinecap="round"
-              strokeLinejoin="round"
-            />
-
-            {/* Center lane markings */}
-            <path
-              d={road.d}
-              fill="none"
-              stroke="#F8FAFC"
-              strokeWidth={2}
-              strokeLinecap="round"
-              strokeDasharray="8 12"
-              opacity={0.4}
-            />
-
-            {/* Measured path for getPointAtLength */}
-            <path ref={pathRef} d={road.d} fill="none" stroke="transparent" strokeWidth={1} />
-
-            {/* Neutral connectors: node → card */}
-            {stations.map((pt, i) => {
-              const left = cardLeftWideHalf(
-                pt.side,
-                road.cardWidth,
-                road.width,
-                road.edgePad,
-                road.roadClearance,
-              );
-              const x2 = pt.side === "left" ? left + road.cardWidth : left;
-              return (
-                <g key={`stub-${i}`}>
-                  <line
-                    x1={pt.x}
-                    y1={pt.y}
-                    x2={x2}
-                    y2={pt.y}
-                    stroke="rgb(148 163 184 / 0.35)"
-                    strokeWidth={2}
-                    strokeDasharray="5 6"
-                    strokeLinecap="round"
-                  />
-                  <circle cx={x2} cy={pt.y} r={2.5} fill="rgb(148 163 184 / 0.55)" />
-                </g>
-              );
-            })}
-          </svg>
-
-          {/* Stop nodes sampled on the diagonal curve */}
-          {stations.map((pt, i) => {
-            const stop = line.stops[i];
-            if (!stop) return null;
-            const status = getStopStatus(i, safeIndex);
-            return (
-              <motion.button
-                key={`node-${stop.id}`}
-                type="button"
-                aria-label={pick(stop.name, locale)}
-                onClick={() => goTo(i)}
-                initial={{ scale: 0, opacity: 0 }}
-                animate={{ scale: 1, opacity: 1 }}
-                transition={{ type: "spring", stiffness: 380, damping: 18, delay: Math.min(i * 0.04, 0.4) }}
-                className="absolute z-20 -translate-x-1/2 -translate-y-1/2 focus-visible:outline-none"
-                style={{ left: pt.x, top: pt.y }}
-              >
-                <RoadNode status={status} order={stop.order} />
-              </motion.button>
-            );
-          })}
-
-          {/* Cards spread across left/right half-columns */}
-          {stations.map((pt, i) => {
-            const stop = line.stops[i];
-            if (!stop) return null;
-            const status = getStopStatus(i, safeIndex);
-            const distKm = stopDistancesKm[i] ?? null;
-            const left = cardLeftWideHalf(
-              pt.side,
-              road.cardWidth,
-              road.width,
-              road.edgePad,
-              road.roadClearance,
-            );
-
-            return (
-              <div
-                key={`card-${stop.id}`}
-                ref={(node) => {
-                  cardRefs.current[i] = node;
-                }}
-                className="absolute z-10 scroll-mt-28"
-                style={{
-                  left,
-                  top: pt.y,
-                  width: road.cardWidth,
-                  transform: "translateY(-50%)",
-                }}
-              >
-                <MemoStopCard
-                  stop={stop}
-                  status={status}
-                  distanceKm={distKm}
-                  side={pt.side}
-                  index={i}
-                  compact={mapWidth < 640}
-                  reduceMotion={reduceMotion}
-                  showOfficeHours={settings.showOfficeHours}
-                  onActivate={() => goTo(i)}
-                  onOpenDetails={() => {
-                    goTo(i);
-                    onOpenStop(stop);
-                  }}
-                  onGoToMaps={() => {
-                    goTo(i);
-                    openStopInMaps(stop);
-                  }}
-                />
-              </div>
-            );
-          })}
-
-          {/* Bus glides along path to the selected stop */}
-          <div
-            ref={busRef}
-            className="pointer-events-none absolute z-30"
-            style={{
-              width: BUS_SIZE,
-              height: BUS_SIZE,
-              marginLeft: -BUS_SIZE / 2,
-              marginTop: -BUS_SIZE / 2,
-              willChange: "transform, left, top",
-            }}
-          >
-            {/* Soft halo + pulse only on the bus */}
-            <motion.span
-              className="absolute inset-[-6px] rounded-full bg-amber-400/35 blur-md"
-              animate={
-                reduceMotion
-                  ? { opacity: 0.55, scale: 1 }
-                  : { opacity: [0.35, 0.75, 0.35], scale: [0.92, 1.12, 0.92] }
-              }
-              transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
-              aria-hidden
-            />
-            <motion.span
-              className="absolute inset-0 rounded-full ring-2 ring-amber-400/50"
-              animate={
-                reduceMotion
-                  ? { boxShadow: "0 0 12px rgba(245,158,11,0.35)" }
-                  : {
-                      boxShadow: [
-                        "0 0 0 0 rgba(245,158,11,0.45)",
-                        "0 0 0 10px rgba(245,158,11,0)",
-                        "0 0 0 0 rgba(245,158,11,0.45)",
-                      ],
-                    }
-              }
-              transition={{ duration: 1.8, repeat: Infinity, ease: "easeOut" }}
-              aria-hidden
-            />
-            <span className="relative size-11 overflow-hidden rounded-full shadow-xl shadow-amber-500/35 ring-2 ring-white/85 dark:ring-slate-900/70">
-              <img
-                src={routeBusMarker}
-                alt=""
-                draggable={false}
-                className="size-full object-cover"
-              />
-            </span>
+          <div className="relative z-30 mb-5 flex w-full max-w-none flex-wrap items-center justify-between gap-3">
+            <p className="min-w-0 truncate text-xs font-bold text-slate-500 dark:text-slate-400">
+              {t.stopProgress(safeIndex + 1, total, pick(activeStop.name, locale))}
+            </p>
+            <button
+              type="button"
+              onClick={findNearest}
+              disabled={locating}
+              className="relative z-30 flex items-center gap-2 rounded-full bg-amber-500 px-4 py-2 text-xs font-extrabold text-slate-950 shadow-lg shadow-amber-500/25 disabled:opacity-60"
+            >
+              <Crosshair className={cn("size-4", locating && "animate-spin")} />
+              {locating ? t.locating : t.nearest}
+            </button>
           </div>
-        </div>
 
-      </div>
+          {nearest && (
+            <p className="relative z-30 mb-4 rounded-xl border border-amber-500/20 bg-amber-500/10 px-4 py-2 text-xs font-bold text-amber-800 dark:text-amber-300">
+              {t.nearestResult(pick(nearest.stop.name, locale), nearest.km.toFixed(1))}
+            </p>
+          )}
+          {geoError && (
+            <p className="relative z-30 mb-4 rounded-xl border border-destructive/40 px-4 py-2 text-xs text-destructive">
+              {geoError}
+            </p>
+          )}
+
+          {isMobileLayout ? (
+            <div className="py-2">
+              {/* شريط المحطات — أفقي */}
+              <div className="mb-3 px-1">
+                <div className="mb-3 h-1 overflow-hidden rounded-full bg-slate-200/80 dark:bg-slate-800">
+                  <div
+                    className="h-full rounded-full bg-gradient-to-l from-emerald-500 to-amber-500 transition-all duration-500"
+                    style={{ width: `${completion}%` }}
+                  />
+                </div>
+                <div
+                  ref={pillStripRef}
+                  className="flex items-center gap-2 overflow-x-auto pb-1 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+                >
+                  <div className="flex min-w-full items-center gap-2 px-1">
+                    {line.stops.map((stop, i) => {
+                      const active = i === safeIndex;
+                      const passed = i < safeIndex;
+                      return (
+                        <button
+                          key={`pill-${stop.id}`}
+                          type="button"
+                          data-pill-index={i}
+                          aria-label={pick(stop.name, locale)}
+                          aria-current={active ? "step" : undefined}
+                          onClick={() => goTo(i)}
+                          className={cn(
+                            "inline-flex shrink-0 flex-col items-center gap-1 rounded-2xl border px-2 py-1.5 text-[10px] font-bold transition-all",
+                            active
+                              ? "z-10 min-w-[4.25rem] border-amber-400 bg-[#0B2265] text-amber-100 shadow-lg shadow-amber-500/25"
+                              : passed
+                                ? "border-emerald-400/40 bg-emerald-500/10 text-emerald-700 dark:text-emerald-300"
+                                : "border-slate-200/80 bg-white/90 text-slate-500 dark:border-slate-700 dark:bg-slate-900/80 dark:text-slate-400",
+                          )}
+                        >
+                          <span
+                            className={cn(
+                              "flex size-7 items-center justify-center rounded-full text-[11px] font-black",
+                              active
+                                ? "bg-amber-400 text-slate-950 ring-2 ring-amber-200/50"
+                                : passed
+                                  ? "bg-emerald-500/20 text-emerald-700 dark:text-emerald-300"
+                                  : "bg-slate-100 text-slate-500 dark:bg-slate-800 dark:text-slate-400",
+                            )}
+                          >
+                            {stop.order}
+                          </span>
+                          <span className="max-w-[4.5rem] truncate leading-tight">
+                            {pick(stop.name, locale)}
+                          </span>
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+              </div>
+
+              {/* بطاقات — تمرير أفقي */}
+              <div className="relative">
+                <div className="pointer-events-none absolute inset-y-0 start-0 z-10 w-6 bg-gradient-to-r from-white/95 to-transparent dark:from-slate-950/95" />
+                <div className="pointer-events-none absolute inset-y-0 end-0 z-10 w-6 bg-gradient-to-l from-white/95 to-transparent dark:from-slate-950/95" />
+
+                <div className="absolute inset-y-0 start-0 z-20 flex items-center">
+                  <button
+                    type="button"
+                    onClick={goPrev}
+                    disabled={safeIndex === 0}
+                    aria-label={t.prevStop}
+                    className="inline-flex size-8 items-center justify-center rounded-full border border-slate-200/80 bg-white/95 text-slate-700 shadow-md disabled:opacity-30 dark:border-slate-700 dark:bg-slate-900/95 dark:text-slate-200"
+                  >
+                    <PrevIcon className="size-4" />
+                  </button>
+                </div>
+                <div className="absolute inset-y-0 end-0 z-20 flex items-center">
+                  <button
+                    type="button"
+                    onClick={goNext}
+                    disabled={safeIndex === total - 1}
+                    aria-label={t.nextStop}
+                    className="inline-flex size-8 items-center justify-center rounded-full border border-slate-200/80 bg-white/95 text-slate-700 shadow-md disabled:opacity-30 dark:border-slate-700 dark:bg-slate-900/95 dark:text-slate-200"
+                  >
+                    <NextIcon className="size-4" />
+                  </button>
+                </div>
+
+                <div
+                  ref={carouselRef}
+                  className="flex snap-x snap-mandatory gap-3 overflow-x-auto overscroll-x-contain scroll-smooth px-9 pb-2 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+                  dir="ltr"
+                >
+                  {line.stops.map((stop, i) => {
+                    const status = getStopStatus(i, safeIndex);
+                    const distKm = stopDistancesKm[i] ?? null;
+                    const active = i === safeIndex;
+                    return (
+                      <div
+                        key={`mobile-${stop.id}`}
+                        data-card-index={i}
+                        ref={(node) => {
+                          cardRefs.current[i] = node;
+                        }}
+                        className={cn(
+                          "w-[min(calc(100vw-5.5rem),20.5rem)] shrink-0 snap-center transition-[transform,opacity] duration-300",
+                          active ? "scale-100 opacity-100" : "scale-[0.97] opacity-85",
+                        )}
+                        dir={dir}
+                      >
+                        <MemoStopCard
+                          stop={stop}
+                          status={status}
+                          distanceKm={distKm}
+                          side={cardSide(i)}
+                          index={i}
+                          compact={false}
+                          listLayout
+                          reduceMotion={reduceMotion}
+                          showOfficeHours={settings.showOfficeHours}
+                          onActivate={() => goTo(i)}
+                          onOpenDetails={() => {
+                            goTo(i);
+                            onOpenStop(stop);
+                          }}
+                          onGoToMaps={() => {
+                            goTo(i);
+                            openStopInMaps(stop);
+                          }}
+                        />
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+
+              <p className="mt-2 text-center text-[10px] font-medium text-slate-400 dark:text-slate-500">
+                {dir === "rtl" ? "← اسحب لعرض المحطات →" : "→ Swipe to browse stops ←"}
+              </p>
+            </div>
+          ) : (
+            <div
+              className="relative z-0 touch-pan-y overflow-x-clip overflow-y-visible pt-2"
+              style={{ height: road.height, minHeight: road.height }}
+            >
+              <svg
+                className="pointer-events-none absolute inset-0 h-full w-full overflow-visible"
+                width={road.width}
+                height={road.height}
+                viewBox={`0 0 ${road.width} ${road.height}`}
+                preserveAspectRatio="xMidYMin meet"
+                aria-hidden
+              >
+                {/* Soft terrain wash under the highway */}
+                <path
+                  d={road.d}
+                  fill="none"
+                  stroke="rgb(148 163 184 / 0.18)"
+                  strokeWidth={roadStroke + 18}
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                />
+
+                {/* Asphalt highway — uniform, no progress fill */}
+                <path
+                  d={road.d}
+                  fill="none"
+                  stroke={ASPHALT}
+                  strokeWidth={roadStroke}
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                />
+                <path
+                  d={road.d}
+                  fill="none"
+                  stroke="rgb(51 65 85 / 0.9)"
+                  strokeWidth={roadStroke - 8}
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                />
+
+                {/* Center lane markings */}
+                <path
+                  d={road.d}
+                  fill="none"
+                  stroke="#F8FAFC"
+                  strokeWidth={2}
+                  strokeLinecap="round"
+                  strokeDasharray="8 12"
+                  opacity={0.4}
+                />
+
+                {/* Measured path for getPointAtLength */}
+                <path ref={pathRef} d={road.d} fill="none" stroke="transparent" strokeWidth={1} />
+
+                {/* Neutral connectors: node → card */}
+                {stations.map((pt, i) => {
+                  const left = cardLeftWideHalf(
+                    pt.side,
+                    road.cardWidth,
+                    road.width,
+                    road.edgePad,
+                    road.roadClearance,
+                  );
+                  const x2 = pt.side === "left" ? left + road.cardWidth : left;
+                  return (
+                    <g key={`stub-${i}`}>
+                      <line
+                        x1={pt.x}
+                        y1={pt.y}
+                        x2={x2}
+                        y2={pt.y}
+                        stroke="rgb(148 163 184 / 0.35)"
+                        strokeWidth={2}
+                        strokeDasharray="5 6"
+                        strokeLinecap="round"
+                      />
+                      <circle cx={x2} cy={pt.y} r={2.5} fill="rgb(148 163 184 / 0.55)" />
+                    </g>
+                  );
+                })}
+              </svg>
+
+              {/* Stop nodes sampled on the diagonal curve */}
+              {stations.map((pt, i) => {
+                const stop = line.stops[i];
+                if (!stop) return null;
+                const status = getStopStatus(i, safeIndex);
+                return (
+                  <motion.button
+                    key={`node-${stop.id}`}
+                    type="button"
+                    aria-label={pick(stop.name, locale)}
+                    onClick={() => goTo(i)}
+                    initial={{ scale: 0, opacity: 0 }}
+                    animate={{ scale: 1, opacity: 1 }}
+                    transition={{
+                      type: "spring",
+                      stiffness: 380,
+                      damping: 18,
+                      delay: Math.min(i * 0.04, 0.4),
+                    }}
+                    className="absolute z-20 -translate-x-1/2 -translate-y-1/2 focus-visible:outline-none"
+                    style={{ left: pt.x, top: pt.y }}
+                  >
+                    <RoadNode status={status} order={stop.order} />
+                  </motion.button>
+                );
+              })}
+
+              {/* Cards spread across left/right half-columns */}
+              {stations.map((pt, i) => {
+                const stop = line.stops[i];
+                if (!stop) return null;
+                const status = getStopStatus(i, safeIndex);
+                const distKm = stopDistancesKm[i] ?? null;
+                const left = cardLeftWideHalf(
+                  pt.side,
+                  road.cardWidth,
+                  road.width,
+                  road.edgePad,
+                  road.roadClearance,
+                );
+
+                return (
+                  <div
+                    key={`card-${stop.id}`}
+                    ref={(node) => {
+                      cardRefs.current[i] = node;
+                    }}
+                    className="absolute z-10 scroll-mt-28"
+                    style={{
+                      left,
+                      top: pt.y,
+                      width: road.cardWidth,
+                      transform: "translateY(-50%)",
+                    }}
+                  >
+                    <MemoStopCard
+                      stop={stop}
+                      status={status}
+                      distanceKm={distKm}
+                      side={pt.side}
+                      index={i}
+                      compact={mapWidth < 640}
+                      reduceMotion={reduceMotion}
+                      showOfficeHours={settings.showOfficeHours}
+                      onActivate={() => goTo(i)}
+                      onOpenDetails={() => {
+                        goTo(i);
+                        onOpenStop(stop);
+                      }}
+                      onGoToMaps={() => {
+                        goTo(i);
+                        openStopInMaps(stop);
+                      }}
+                    />
+                  </div>
+                );
+              })}
+
+              {/* Bus glides along path to the selected stop */}
+              <div
+                ref={busRef}
+                className="pointer-events-none absolute z-30"
+                style={{
+                  width: BUS_SIZE,
+                  height: BUS_SIZE,
+                  marginLeft: -BUS_SIZE / 2,
+                  marginTop: -BUS_SIZE / 2,
+                  willChange: "transform, left, top",
+                }}
+              >
+                {/* Soft halo + pulse only on the bus */}
+                <motion.span
+                  className="absolute inset-[-6px] rounded-full bg-amber-400/35 blur-md"
+                  animate={
+                    reduceMotion
+                      ? { opacity: 0.55, scale: 1 }
+                      : { opacity: [0.35, 0.75, 0.35], scale: [0.92, 1.12, 0.92] }
+                  }
+                  transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
+                  aria-hidden
+                />
+                <motion.span
+                  className="absolute inset-0 rounded-full ring-2 ring-amber-400/50"
+                  animate={
+                    reduceMotion
+                      ? { boxShadow: "0 0 12px rgba(245,158,11,0.35)" }
+                      : {
+                          boxShadow: [
+                            "0 0 0 0 rgba(245,158,11,0.45)",
+                            "0 0 0 10px rgba(245,158,11,0)",
+                            "0 0 0 0 rgba(245,158,11,0.45)",
+                          ],
+                        }
+                  }
+                  transition={{ duration: 1.8, repeat: Infinity, ease: "easeOut" }}
+                  aria-hidden
+                />
+                <span className="relative size-11 overflow-hidden rounded-full shadow-xl shadow-amber-500/35 ring-2 ring-white/85 dark:ring-slate-900/70">
+                  <img
+                    src={routeBusMarker}
+                    alt=""
+                    draggable={false}
+                    className="size-full object-cover"
+                  />
+                </span>
+              </div>
+            </div>
+          )}
+        </div>
       </div>
 
       <div
-        className="pointer-events-none fixed inset-x-0 bottom-0 z-40 w-full max-w-none px-6 pb-[max(0.75rem,env(safe-area-inset-bottom))] pt-6 md:px-12"
-        style={{ background: "linear-gradient(to top, var(--color-background) 50%, transparent)" }}
+        className={cn(
+          "z-40 w-full max-w-none px-6 md:px-12",
+          isMobileLayout
+            ? "relative mt-3 pb-[max(0.5rem,env(safe-area-inset-bottom))] pt-2"
+            : "pointer-events-none fixed inset-x-0 bottom-0 pb-[max(0.75rem,env(safe-area-inset-bottom))] pt-6",
+        )}
+        style={
+          isMobileLayout
+            ? undefined
+            : { background: "linear-gradient(to top, var(--color-background) 50%, transparent)" }
+        }
       >
         <div
           {...dockSwipe}
           className="pointer-events-auto mx-auto flex w-full max-w-none flex-col gap-2.5 rounded-2xl border border-white/50 bg-white/80 p-3 shadow-2xl shadow-slate-900/10 backdrop-blur-xl dark:border-slate-700/60 dark:bg-slate-900/80"
         >
           <div className="flex items-center gap-2 px-1">
-            <span className="text-[10px] font-bold tracking-wide text-slate-500 dark:text-slate-400">{t.tripProgress}</span>
+            <span className="text-[10px] font-bold tracking-wide text-slate-500 dark:text-slate-400">
+              {t.tripProgress}
+            </span>
             <div className="h-1.5 flex-1 overflow-hidden rounded-full bg-slate-200/90 dark:bg-slate-800">
               <motion.div
                 className="h-full rounded-full bg-gradient-to-r from-amber-500 to-yellow-400"
@@ -700,7 +923,9 @@ export function RouteStepper({
                 transition={reduceMotion ? { duration: 0.2 } : SPRING}
               />
             </div>
-            <span className="text-[10px] font-extrabold text-amber-600 dark:text-amber-400">{t.routePercent(completion)}</span>
+            <span className="text-[10px] font-extrabold text-amber-600 dark:text-amber-400">
+              {t.routePercent(completion)}
+            </span>
           </div>
           <div className="flex items-center gap-2">
             <button
@@ -757,6 +982,7 @@ function StopCard({
   side,
   index,
   compact,
+  listLayout = false,
   reduceMotion = false,
   showOfficeHours,
   onActivate,
@@ -769,15 +995,16 @@ function StopCard({
   side: "left" | "right";
   index: number;
   compact?: boolean;
+  listLayout?: boolean;
   reduceMotion?: boolean;
   showOfficeHours: boolean;
   onActivate: () => void;
   onOpenDetails: () => void;
   onGoToMaps: () => void;
 }) {
-  const { locale, t } = useI18n();
+  const { locale, dir, t } = useI18n();
   const active = status === "active";
-  const fromX = side === "left" ? -28 : 28;
+  const fromX = listLayout ? 0 : side === "left" ? -28 : 28;
 
   return (
     <motion.div
@@ -790,14 +1017,14 @@ function StopCard({
           onActivate();
         }
       }}
-      initial={reduceMotion ? false : { opacity: 0, x: fromX, scale: 0.94 }}
+      initial={reduceMotion || listLayout ? false : { opacity: 0, x: fromX, scale: 0.94 }}
       animate={{
-        opacity: active ? 1 : 0.9,
+        opacity: active ? 1 : listLayout ? 0.88 : 0.9,
         x: 0,
-        scale: active ? 1.04 : 1,
+        scale: listLayout ? 1 : active ? 1.04 : 1,
         y: 0,
       }}
-      whileHover={{ opacity: 1, scale: active ? 1.05 : 1.02 }}
+      {...(listLayout ? {} : { whileHover: { opacity: 1, scale: active ? 1.05 : 1.02 } })}
       transition={{
         opacity: { duration: 0.35, delay: Math.min(index * 0.05, 0.45) },
         x: { type: "spring", stiffness: 260, damping: 22, delay: Math.min(index * 0.05, 0.45) },
@@ -805,61 +1032,108 @@ function StopCard({
         y: { duration: 0.3 },
       }}
       className={cn(
-        "group relative cursor-pointer overflow-hidden rounded-2xl border backdrop-blur-xl",
-        compact ? "p-2" : "p-3 sm:p-3.5",
+        "group relative w-full cursor-pointer overflow-hidden rounded-2xl border backdrop-blur-xl",
+        listLayout ? "p-3.5" : compact ? "p-2" : "p-3 sm:p-3.5",
         active
           ? "z-10 border-amber-400/80 bg-white/95 shadow-xl shadow-amber-500/25 ring-2 ring-amber-500 dark:bg-slate-900/95"
           : "border-slate-200/60 bg-white/80 hover:border-slate-300 dark:border-slate-800/50 dark:bg-slate-900/50 dark:hover:border-slate-700",
-        side === "right" ? "origin-left" : "origin-right",
+        !listLayout && (side === "right" ? "origin-left" : "origin-right"),
       )}
     >
       {active && (
         <>
           <motion.span
             className="pointer-events-none absolute -end-8 -top-8 size-28 rounded-full bg-amber-400/20 blur-2xl"
-            animate={reduceMotion ? { opacity: 0.5 } : { opacity: [0.35, 0.7, 0.35], scale: [1, 1.12, 1] }}
+            animate={
+              reduceMotion ? { opacity: 0.5 } : { opacity: [0.35, 0.7, 0.35], scale: [1, 1.12, 1] }
+            }
             transition={{ duration: 2.2, repeat: Infinity, ease: "easeInOut" }}
             aria-hidden
           />
-          <span className="pointer-events-none absolute inset-0 rounded-2xl ring-1 ring-inset ring-amber-400/30" aria-hidden />
+          <span
+            className="pointer-events-none absolute inset-0 rounded-2xl ring-1 ring-inset ring-amber-400/30"
+            aria-hidden
+          />
+        </>
+      )}
+
+      {listLayout ? (
+        <div className="flex items-start gap-3" dir={dir}>
+          <span
+            className={cn(
+              "flex size-10 shrink-0 items-center justify-center rounded-2xl border font-black",
+              active
+                ? "border-amber-400/70 bg-[#0B2265] text-sm text-amber-200 shadow-md shadow-amber-500/20"
+                : "border-slate-300/80 bg-white/90 text-sm text-slate-600 dark:border-slate-600 dark:bg-slate-900/80 dark:text-slate-300",
+            )}
+          >
+            {stop.order}
+          </span>
+          <div
+            role="presentation"
+            onClick={(e) => {
+              e.stopPropagation();
+              onOpenDetails();
+            }}
+            className="min-w-0 flex-1 text-start"
+          >
+            <h3 className="font-black leading-snug text-slate-900 dark:text-white text-base">
+              {pick(stop.name, locale)}
+            </h3>
+            <p className="mt-1 flex items-start gap-1 text-xs font-medium leading-snug text-slate-500 dark:text-slate-400">
+              <MapPin className="mt-0.5 size-3.5 shrink-0 text-amber-500" />
+              <span className="line-clamp-2">{pick(stop.landmarkDescription, locale)}</span>
+            </p>
+          </div>
+        </div>
+      ) : (
+        <>
+          <div
+            role="presentation"
+            onClick={(e) => {
+              e.stopPropagation();
+              onOpenDetails();
+            }}
+            className="w-full text-start"
+          >
+            <h3
+              className={cn(
+                "font-black leading-snug text-slate-900 dark:text-white",
+                compact ? "text-[13px] leading-tight" : "text-base sm:text-lg",
+              )}
+            >
+              {pick(stop.name, locale)}
+            </h3>
+            <p
+              className={cn(
+                "mt-1 flex items-start gap-1 font-medium text-slate-500 dark:text-slate-400",
+                compact ? "text-[10px] leading-snug" : "text-xs sm:text-sm",
+              )}
+            >
+              <MapPin
+                className={cn(
+                  "mt-0.5 shrink-0 text-amber-500",
+                  compact ? "size-3" : "size-3.5 sm:size-4",
+                )}
+              />
+              <span className={cn(compact ? "line-clamp-3" : "line-clamp-2")}>
+                {pick(stop.landmarkDescription, locale)}
+              </span>
+            </p>
+          </div>
         </>
       )}
 
       <div
-        role="presentation"
-        onClick={(e) => {
-          e.stopPropagation();
-          onOpenDetails();
-        }}
-        className="w-full text-start"
+        className="mt-2.5 flex w-full min-w-0 flex-col items-stretch gap-1.5 text-start"
+        dir="rtl"
       >
-        <h3
-          className={cn(
-            "font-black leading-snug text-slate-900 dark:text-white",
-            compact ? "text-[13px] leading-tight" : "text-base sm:text-lg",
-          )}
-        >
-          {pick(stop.name, locale)}
-        </h3>
-        <p
-          className={cn(
-            "mt-1 flex items-start gap-1 font-medium text-slate-500 dark:text-slate-400",
-            compact ? "text-[10px] leading-snug" : "text-xs sm:text-sm",
-          )}
-        >
-          <MapPin className={cn("mt-0.5 shrink-0 text-amber-500", compact ? "size-3" : "size-3.5 sm:size-4")} />
-          <span className={cn(compact ? "line-clamp-3" : "line-clamp-2")}>
-            {pick(stop.landmarkDescription, locale)}
-          </span>
-        </p>
-      </div>
-
-      <div className="mt-2 flex w-full min-w-0 flex-col items-stretch gap-1.5 text-start" dir="rtl">
         <StopPickupSchedule
           lineId={stop.lineId}
           stopOrder={stop.order}
           departureTime={stop.departureTime}
-          compact={compact ?? false}
+          compact={listLayout ? false : (compact ?? false)}
+          horizontal={listLayout}
           showOfficeHours={showOfficeHours}
           className="w-full"
         />
@@ -916,10 +1190,7 @@ type SafeRouteStepperProps = {
   onOpenStop: (stop: Stop) => void;
 };
 
-class StepperErrorBoundary extends Component<
-  { children: ReactNode },
-  { hasError: boolean }
-> {
+class StepperErrorBoundary extends Component<{ children: ReactNode }, { hasError: boolean }> {
   override state = { hasError: false };
 
   static getDerivedStateFromError() {
@@ -951,7 +1222,7 @@ export function SafeRouteStepper(props: SafeRouteStepperProps) {
   }, []);
 
   if (!ready) {
-    return <div className="min-h-[28rem] w-full" aria-hidden />;
+    return <div className="min-h-[10rem] w-full sm:min-h-[16rem]" aria-hidden />;
   }
 
   return (

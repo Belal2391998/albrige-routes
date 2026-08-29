@@ -22,7 +22,9 @@ function NotFoundComponent() {
       <div className="max-w-md text-center">
         <h1 className="text-7xl font-bold text-foreground">404</h1>
         <h2 className="mt-4 text-xl font-semibold text-foreground">الصفحة غير موجودة</h2>
-        <p className="mt-2 text-sm text-muted-foreground">الصفحة التي تبحث عنها غير متوفرة أو تم نقلها.</p>
+        <p className="mt-2 text-sm text-muted-foreground">
+          الصفحة التي تبحث عنها غير متوفرة أو تم نقلها.
+        </p>
         <div className="mt-6">
           <Link
             to="/"
@@ -46,7 +48,9 @@ function ErrorComponent({ error, reset }: { error: Error; reset: () => void }) {
     <div className="flex min-h-screen items-center justify-center bg-background px-4">
       <div className="max-w-md text-center">
         <h1 className="text-xl font-semibold tracking-tight text-foreground">تعذّر تحميل الصفحة</h1>
-        <p className="mt-2 text-sm text-muted-foreground">حدث خطأ غير متوقع. يمكنك إعادة المحاولة أو العودة إلى الرئيسية.</p>
+        <p className="mt-2 text-sm text-muted-foreground">
+          حدث خطأ غير متوقع. يمكنك إعادة المحاولة أو العودة إلى الرئيسية.
+        </p>
         <div className="mt-6 flex flex-wrap justify-center gap-2">
           <button
             onClick={() => {
@@ -78,7 +82,10 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       { name: "description", content: "شبكة خطوط النقل الذكية من البريجي." },
       { name: "author", content: "Al-Breeji" },
       { property: "og:title", content: "شركة البريجي | شبكة خطوط النقل الذكية" },
-      { property: "og:description", content: "دقة في المواعيد وراحة في التنقل عبر شبكة خطوط البريجي الذكية." },
+      {
+        property: "og:description",
+        content: "دقة في المواعيد وراحة في التنقل عبر شبكة خطوط البريجي الذكية.",
+      },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },
     ],

@@ -1,12 +1,6 @@
 import { useRef, useState, type MouseEvent } from "react";
 import { Link } from "@tanstack/react-router";
-import {
-  motion,
-  useMotionTemplate,
-  useMotionValue,
-  useSpring,
-  useTransform,
-} from "motion/react";
+import { motion, useMotionTemplate, useMotionValue, useSpring, useTransform } from "motion/react";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import type { LineCardMeta } from "@/data/transportData";
 import { pick, useI18n } from "@/lib/i18n";
@@ -72,9 +66,7 @@ export function LineRouteCard({ meta, index, immersive = false }: LineRouteCardP
           rotateX,
           rotateY,
           transformStyle: "preserve-3d",
-          boxShadow: hovered
-            ? `0 12px 28px -18px ${meta.shadowTint}`
-            : undefined,
+          boxShadow: hovered ? `0 12px 28px -18px ${meta.shadowTint}` : undefined,
         }}
         animate={{
           y: hovered ? -6 : 0,
@@ -108,10 +100,7 @@ export function LineRouteCard({ meta, index, immersive = false }: LineRouteCardP
           to="/lines/$slug"
           params={{ slug: meta.slug }}
           search={{}}
-          className={cn(
-            "relative z-10 flex items-center",
-            immersive ? "gap-5 sm:gap-6" : "gap-4",
-          )}
+          className={cn("relative z-10 flex items-center", immersive ? "gap-5 sm:gap-6" : "gap-4")}
           style={{ transform: "translateZ(24px)" }}
         >
           <motion.div

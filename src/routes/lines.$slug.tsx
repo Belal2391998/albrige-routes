@@ -14,7 +14,8 @@ export const Route = createFileRoute("/lines/$slug")({
   ssr: false,
   validateSearch: (search: Record<string, unknown>) => {
     const raw = search["stop"];
-    const n = typeof raw === "number" ? raw : typeof raw === "string" && raw !== "" ? Number(raw) : NaN;
+    const n =
+      typeof raw === "number" ? raw : typeof raw === "string" && raw !== "" ? Number(raw) : NaN;
     if (Number.isFinite(n) && n > 0) return { stop: n };
     return {};
   },
@@ -23,7 +24,9 @@ export const Route = createFileRoute("/lines/$slug")({
   },
   head: ({ loaderData }) => {
     if (!loaderData) {
-      return { meta: [{ title: "الخط غير متوفر | البريجي" }, { name: "robots", content: "noindex" }] };
+      return {
+        meta: [{ title: "الخط غير متوفر | البريجي" }, { name: "robots", content: "noindex" }],
+      };
     }
     const line = getLineBySlug(loaderData.slug);
     const title = line ? `${line.title.ar} | شبكة البريجي للنقل` : "البريجي";
@@ -54,6 +57,7 @@ function LineView({ slug }: { slug: string }) {
   const { locale, t } = useI18n();
   const { getLiveLine } = useSchedule();
   const line = getLiveLine(slug) ?? getLineBySlug(slug);
+  const stopsLength = line?.stops.length ?? 0;
   const [activeIndex, setActiveIndex] = useState(() => {
     if (!line) return 0;
     return stopParam && stopParam > 0 && stopParam <= line.stops.length ? stopParam - 1 : 0;
@@ -66,10 +70,10 @@ function LineView({ slug }: { slug: string }) {
   }, [slug, locale, t.lineMetaSuffix, line]);
 
   useEffect(() => {
-    if (!line) return;
-    const max = Math.max(0, line.stops.length - 1);
+    if (stopsLength === 0) return;
+    const max = Math.max(0, stopsLength - 1);
     setActiveIndex((i) => Math.min(Math.max(0, i), max));
-  }, [slug, line?.stops.length]);
+  }, [slug, stopsLength]);
 
   if (!line) {
     return (
@@ -88,7 +92,7 @@ function LineView({ slug }: { slug: string }) {
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.15, duration: 0.45 }}
-        className="relative w-full overflow-hidden bg-slate-50/50 pb-36 pt-4 transition-colors dark:bg-slate-950/90"
+        className="relative w-full overflow-hidden bg-slate-50/50 pb-4 pt-4 transition-colors dark:bg-slate-950/90 md:pb-36"
       >
         <div
           className="pointer-events-none absolute inset-0 opacity-50 [mask-image:radial-gradient(ellipse_at_center,black_35%,transparent_80%)] dark:opacity-55"

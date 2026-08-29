@@ -193,7 +193,8 @@ const messages = {
     adminSecurityTab: "الأمان وكلمة السر",
     adminSettingsTab: "إعدادات العرض",
     adminSettingsTitle: "إعدادات الموقع",
-    adminSettingsLead: "تحكم بما يظهر للطلاب على الموقع العام. التغييرات تُحفظ فوراً وتتزامن مع قاعدة البيانات.",
+    adminSettingsLead:
+      "تحكم بما يظهر للطلاب على الموقع العام. التغييرات تُحفظ فوراً وتتزامن مع قاعدة البيانات.",
     adminShowOfficeHours: "إظهار أوقات الدوام",
     adminShowOfficeHoursHint: "أوقات التجمع حسب المحاضرة وأوقات المغادرة من الجامعة",
     adminOfficeHoursShown: "أوقات الدوام ظاهرة للجمهور",

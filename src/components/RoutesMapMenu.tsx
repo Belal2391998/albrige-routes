@@ -77,7 +77,15 @@ function ActiveTrack() {
         filter="url(#track-glow)"
         className="opacity-90"
       />
-      <circle cx="168" cy="8.5" r="3.5" fill="#FBBF24" filter="url(#track-glow)" className="animate-pulse" opacity="0.85" />
+      <circle
+        cx="168"
+        cy="8.5"
+        r="3.5"
+        fill="#FBBF24"
+        filter="url(#track-glow)"
+        className="animate-pulse"
+        opacity="0.85"
+      />
     </svg>
   );
 }
@@ -150,9 +158,7 @@ function RouteMenuItem({
           <span
             className={cn(
               "block truncate text-sm font-bold tracking-tight transition-colors duration-300",
-              active
-                ? "text-amber-300"
-                : "text-white group-hover/route:text-amber-200",
+              active ? "text-amber-300" : "text-white group-hover/route:text-amber-200",
             )}
           >
             {title}
@@ -171,9 +177,7 @@ function RouteMenuItem({
               : "border-white/10 bg-white/5 text-slate-500 group-hover/route:border-white/20 group-hover/route:text-slate-300",
           )}
           animate={
-            active
-              ? { x: [0, -1.5, 1.5, -1, 0], rotate: [0, -2, 2, -1, 0] }
-              : { x: 0, rotate: 0 }
+            active ? { x: [0, -1.5, 1.5, -1, 0], rotate: [0, -2, 2, -1, 0] } : { x: 0, rotate: 0 }
           }
           transition={
             active
@@ -181,7 +185,10 @@ function RouteMenuItem({
               : { duration: 0.2 }
           }
         >
-          <Bus className="size-4" style={active ? { filter: `drop-shadow(0 0 6px ${neon.hex})` } : undefined} />
+          <Bus
+            className="size-4"
+            style={active ? { filter: `drop-shadow(0 0 6px ${neon.hex})` } : undefined}
+          />
         </motion.span>
       </Link>
     </motion.div>
@@ -229,7 +236,10 @@ export function RoutesMapMenu({
             transition={{ duration: 2.4, repeat: Infinity, ease: "easeInOut" }}
           >
             <Compass className="size-4" />
-            <span className="pointer-events-none absolute inset-0 rounded-xl bg-amber-400/10 blur-md" aria-hidden />
+            <span
+              className="pointer-events-none absolute inset-0 rounded-xl bg-amber-400/10 blur-md"
+              aria-hidden
+            />
           </motion.span>
           <div className="min-w-0">
             <p className="truncate text-[11px] font-extrabold tracking-wide text-amber-300/95">

@@ -42,12 +42,19 @@ function normalizeSettings(raw: unknown): AppSettings {
   const s = raw as AppSettings;
   return {
     showOfficeHours:
-      typeof s.showOfficeHours === "boolean" ? s.showOfficeHours : DEFAULT_APP_SETTINGS.showOfficeHours,
+      typeof s.showOfficeHours === "boolean"
+        ? s.showOfficeHours
+        : DEFAULT_APP_SETTINGS.showOfficeHours,
   };
 }
 
 function emptySnapshot(): NetworkSnapshot {
-  return { version: 1, routes: [], settings: DEFAULT_APP_SETTINGS, updatedAt: new Date().toISOString() };
+  return {
+    version: 1,
+    routes: [],
+    settings: DEFAULT_APP_SETTINGS,
+    updatedAt: new Date().toISOString(),
+  };
 }
 
 function normalizeSnapshot(raw: unknown): NetworkSnapshot | null {
@@ -120,7 +127,10 @@ function rowToRoute(row: RouteRow, stations: ManagedStation[]): ManagedRoute {
     slug: row.slug,
     name: { ar: row.name, en: row.name_en || row.name },
     subtitle: { ar: row.subtitle || "", en: row.subtitle_en || row.subtitle || "" },
-    badge: { ar: row.badge || `الخط ${row.route_number}`, en: row.badge_en || `Line ${row.route_number}` },
+    badge: {
+      ar: row.badge || `الخط ${row.route_number}`,
+      en: row.badge_en || `Line ${row.route_number}`,
+    },
     isActive: row.is_active,
     displayOrder: row.display_order,
     createdAt: row.created_at,
@@ -144,8 +154,7 @@ function rowToStation(row: StationRow): ManagedStation {
     lat: row.lat ?? 0,
     lng: row.lng ?? 0,
     googleMapsUrl:
-      row.google_maps_url ||
-      `https://www.google.com/maps?q=${row.lat ?? 0},${row.lng ?? 0}`,
+      row.google_maps_url || `https://www.google.com/maps?q=${row.lat ?? 0},${row.lng ?? 0}`,
     imageUrl: row.image_url || "",
   };
 }
@@ -201,7 +210,11 @@ function rowToSettings(row: AppSettingsRow): AppSettings {
 async function fetchAppSettingsFromSupabase(): Promise<AppSettings> {
   const sb = getSupabase();
   if (!sb) return DEFAULT_APP_SETTINGS;
-  const { data, error } = await sb.from("app_settings").select("*").eq("id", "default").maybeSingle();
+  const { data, error } = await sb
+    .from("app_settings")
+    .select("*")
+    .eq("id", "default")
+    .maybeSingle();
   if (error || !data) return DEFAULT_APP_SETTINGS;
   return rowToSettings(data as AppSettingsRow);
 }
@@ -209,7 +222,9 @@ async function fetchAppSettingsFromSupabase(): Promise<AppSettings> {
 async function pushAppSettingsToSupabase(settings: AppSettings): Promise<void> {
   const sb = getSupabase();
   if (!sb) return;
-  const { error } = await sb.from("app_settings").upsert(settingsToRow(settings), { onConflict: "id" });
+  const { error } = await sb
+    .from("app_settings")
+    .upsert(settingsToRow(settings), { onConflict: "id" });
   if (error) throw error;
 }
 
@@ -237,7 +252,10 @@ export async function fetchNetworkFromSupabase(): Promise<NetworkSnapshot | null
   }
 
   const routes = (routeRows as RouteRow[]).map((r) =>
-    rowToRoute(r, (byRoute.get(r.id) ?? []).sort((a, b) => a.stationIndex - b.stationIndex)),
+    rowToRoute(
+      r,
+      (byRoute.get(r.id) ?? []).sort((a, b) => a.stationIndex - b.stationIndex),
+    ),
   );
 
   const settings = await fetchAppSettingsFromSupabase();
@@ -252,14 +270,19 @@ export async function pushNetworkToSupabase(snapshot: NetworkSnapshot): Promise<
   const routeRows = snapshot.routes.map(routeToRow);
   const stationRows = snapshot.routes.flatMap((r) => r.stations.map(stationToRow));
 
-  const { error: upsertRoutesErr } = await sb.from("routes").upsert(routeRows, { onConflict: "id" });
+  const { error: upsertRoutesErr } = await sb
+    .from("routes")
+    .upsert(routeRows, { onConflict: "id" });
   if (upsertRoutesErr) throw upsertRoutesErr;
 
   // Remove stations that no longer exist for synced routes
   const routeIds = snapshot.routes.map((r) => r.id);
   if (routeIds.length) {
     const keepStationIds = stationRows.map((s) => s.id);
-    const { data: existing } = await sb.from("stations").select("id, route_id").in("route_id", routeIds);
+    const { data: existing } = await sb
+      .from("stations")
+      .select("id, route_id")
+      .in("route_id", routeIds);
     const toDelete = (existing ?? [])
       .filter((s: { id: string }) => !keepStationIds.includes(s.id))
       .map((s: { id: string }) => s.id);
@@ -281,10 +304,17 @@ export async function pushNetworkToSupabase(snapshot: NetworkSnapshot): Promise<
   }
 }
 
-export async function loadNetwork(): Promise<{ snapshot: NetworkSnapshot; source: "supabase" | "local" }> {
+export async function loadNetwork(): Promise<{
+  snapshot: NetworkSnapshot;
+  source: "supabase" | "local";
+}> {
   if (isSupabaseConfigured) {
     try {
-      const remote = await withTimeout(fetchNetworkFromSupabase(), SUPABASE_TIMEOUT_MS, "Supabase fetch");
+      const remote = await withTimeout(
+        fetchNetworkFromSupabase(),
+        SUPABASE_TIMEOUT_MS,
+        "Supabase fetch",
+      );
       if (remote && remote.routes.length > 0) {
         writeLocalNetwork(remote);
         return { snapshot: remote, source: "supabase" };

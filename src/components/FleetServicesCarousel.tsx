@@ -53,7 +53,10 @@ function CinemaCard({ card }: { card: FleetServiceCard }) {
 
 function MarqueeRow({ ariaHidden }: { ariaHidden?: boolean }) {
   return (
-    <div className="flex shrink-0 gap-4 pe-4 sm:gap-5 sm:pe-5" aria-hidden={ariaHidden || undefined}>
+    <div
+      className="flex shrink-0 gap-4 pe-4 sm:gap-5 sm:pe-5"
+      aria-hidden={ariaHidden || undefined}
+    >
       {fleetServiceCards.map((card) => (
         <div
           key={`${ariaHidden ? "dup" : "src"}-${card.id}`}
@@ -70,7 +73,10 @@ export function FleetServicesCarousel() {
   const { t } = useI18n();
 
   return (
-    <section className="relative overflow-hidden bg-[#0A192F] py-14 sm:py-16" aria-label={t.fleetTitle}>
+    <section
+      className="relative overflow-hidden bg-[#0A192F] py-14 sm:py-16"
+      aria-label={t.fleetTitle}
+    >
       <div
         className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_at_top,rgba(20,184,166,0.1),transparent_55%)]"
         aria-hidden

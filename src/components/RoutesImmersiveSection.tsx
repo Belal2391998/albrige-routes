@@ -355,9 +355,7 @@ export function RoutesImmersiveSection() {
             transition={{ duration: 0.5, delay: 0.06 }}
             className={cn(
               "text-balance text-3xl font-extrabold leading-[1.25] tracking-tight sm:text-4xl lg:text-[2.75rem]",
-              isDark
-                ? "text-white drop-shadow-[0_2px_14px_rgba(0,0,0,0.45)]"
-                : "text-[#0A192F]",
+              isDark ? "text-white drop-shadow-[0_2px_14px_rgba(0,0,0,0.45)]" : "text-[#0A192F]",
             )}
           >
             {t.linesSectionTitle}

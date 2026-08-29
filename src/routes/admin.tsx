@@ -387,7 +387,9 @@ function AdminPage() {
                     <Clock3 className="size-4 text-[#14B8A6]" />
                     <p className="text-sm font-extrabold text-white">{t.adminShowOfficeHours}</p>
                   </div>
-                  <p className="mt-1 text-xs leading-relaxed text-slate-400">{t.adminShowOfficeHoursHint}</p>
+                  <p className="mt-1 text-xs leading-relaxed text-slate-400">
+                    {t.adminShowOfficeHoursHint}
+                  </p>
                   <p
                     className={cn(
                       "mt-2 inline-flex items-center rounded-full px-2.5 py-1 text-[11px] font-bold",
@@ -408,9 +410,7 @@ function AdminPage() {
                   onClick={async () => {
                     const next = !settings.showOfficeHours;
                     await updateSettings({ showOfficeHours: next });
-                    toast.success(
-                      next ? t.adminOfficeHoursShown : t.adminOfficeHoursHidden,
-                    );
+                    toast.success(next ? t.adminOfficeHoursShown : t.adminOfficeHoursHidden);
                   }}
                   className={cn(
                     "relative inline-flex h-11 w-[4.5rem] shrink-0 items-center rounded-full border transition-all",

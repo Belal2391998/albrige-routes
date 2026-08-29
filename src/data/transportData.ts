@@ -54,8 +54,7 @@ export interface Line {
 
 const stopImages = [fleetBoarding, fleetRoad, heroFleet, fleetInterior];
 
-const mapsUrl = (lat: number, lng: number) =>
-  `https://www.google.com/maps?q=${lat},${lng}`;
+const mapsUrl = (lat: number, lng: number) => `https://www.google.com/maps?q=${lat},${lng}`;
 
 type RawStop = [
   nameAr: string,
@@ -70,22 +69,24 @@ type RawStop = [
 
 function buildStops(lineId: number, raw: RawStop[]): Stop[] {
   const schedules = lectureSchedulesByLineId[lineId];
-  return raw.map(([nameAr, nameEn, lat, lng, landmarkAr, landmarkEn, departureTime, mapsUrlOverride], i) => {
-    const lectureTimes = schedules?.[i];
-    return {
-      id: `line-${lineId}-stop-${i + 1}`,
-      name: { ar: nameAr, en: nameEn },
-      lineId,
-      order: i + 1,
-      lat,
-      lng,
-      imageUrl: stopImages[(lineId + i) % stopImages.length] ?? stopImages[0]!,
-      landmarkDescription: { ar: landmarkAr, en: landmarkEn },
-      googleMapsUrl: mapsUrlOverride ?? mapsUrl(lat, lng),
-      departureTime: lectureTimes ? toDisplayTime(lectureTimes[0]) : departureTime,
-      ...(lectureTimes ? { adminNote: lectureScheduleNote(lectureTimes) } : {}),
-    };
-  });
+  return raw.map(
+    ([nameAr, nameEn, lat, lng, landmarkAr, landmarkEn, departureTime, mapsUrlOverride], i) => {
+      const lectureTimes = schedules?.[i];
+      return {
+        id: `line-${lineId}-stop-${i + 1}`,
+        name: { ar: nameAr, en: nameEn },
+        lineId,
+        order: i + 1,
+        lat,
+        lng,
+        imageUrl: stopImages[(lineId + i) % stopImages.length] ?? stopImages[0]!,
+        landmarkDescription: { ar: landmarkAr, en: landmarkEn },
+        googleMapsUrl: mapsUrlOverride ?? mapsUrl(lat, lng),
+        departureTime: lectureTimes ? toDisplayTime(lectureTimes[0]) : departureTime,
+        ...(lectureTimes ? { adminNote: lectureScheduleNote(lectureTimes) } : {}),
+      };
+    },
+  );
 }
 
 export const lines: Line[] = [
@@ -93,7 +94,10 @@ export const lines: Line[] = [
     id: 1,
     slug: "line-1",
     title: { ar: "خط أبو نصير", en: "Abu Nseir Line" },
-    subtitle: { ar: "من مسجد أبو نصير الكبير وحتى كازية المناصير", en: "From Abu Nseir Grand Mosque to Manaseer Station" },
+    subtitle: {
+      ar: "من مسجد أبو نصير الكبير وحتى كازية المناصير",
+      en: "From Abu Nseir Grand Mosque to Manaseer Station",
+    },
     badge: { ar: "الخط الأول", en: "Line 1" },
     color: "#0B2265",
     stops: buildStops(1, [
@@ -194,7 +198,10 @@ export const lines: Line[] = [
     id: 2,
     slug: "line-2",
     title: { ar: "خط الاستشارات", en: "Consultations Line" },
-    subtitle: { ar: "من الاستشارات وحتى كازية المناصير", en: "From Consultations building to Manaseer Station" },
+    subtitle: {
+      ar: "من الاستشارات وحتى كازية المناصير",
+      en: "From Consultations building to Manaseer Station",
+    },
     badge: { ar: "الخط الثاني", en: "Line 2" },
     color: "#E5A93C",
     stops: buildStops(2, [
@@ -285,7 +292,10 @@ export const lines: Line[] = [
     id: 3,
     slug: "line-3",
     title: { ar: "خط عريفة مول", en: "Areefa Mall Line" },
-    subtitle: { ar: "من عريفة مول وحتى محمص الشعب على طريق السلام", en: "From Areefa Mall to Al-Shaab Nuts Shop on Al-Salam Road" },
+    subtitle: {
+      ar: "من عريفة مول وحتى محمص الشعب على طريق السلام",
+      en: "From Areefa Mall to Al-Shaab Nuts Shop on Al-Salam Road",
+    },
     badge: { ar: "الخط الثالث", en: "Line 3" },
     color: "#0EA5A5",
     stops: buildStops(3, [
@@ -394,7 +404,10 @@ export const lines: Line[] = [
     id: 4,
     slug: "line-4",
     title: { ar: "خط السلط", en: "Salt Line" },
-    subtitle: { ar: "من مثلث جامعة البلقاء وحتى دوار الكمالية", en: "From Al-Balqa University triangle to Al-Kamaliya Roundabout" },
+    subtitle: {
+      ar: "من مثلث جامعة البلقاء وحتى دوار الكمالية",
+      en: "From Al-Balqa University triangle to Al-Kamaliya Roundabout",
+    },
     badge: { ar: "الخط الرابع", en: "Line 4" },
     color: "#7C3AED",
     stops: buildStops(4, [
@@ -782,11 +795,7 @@ export type FleetServiceCard = {
   href: string;
 };
 
-const fleetPhoto = (
-  id: FleetServiceTheme,
-  image: string,
-  rating: number,
-): FleetServiceCard => ({
+const fleetPhoto = (id: FleetServiceTheme, image: string, rating: number): FleetServiceCard => ({
   id,
   image,
   title: { ar: "أسطول البريجي", en: "Al-Breeji fleet" },

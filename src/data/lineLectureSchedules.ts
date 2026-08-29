@@ -108,5 +108,8 @@ export function returnDeparturesNote(lineId: number): string {
 
 export function lectureScheduleNote(times: LectureTimes): string {
   const labels = times.length === 3 ? (["10:00", "11:30"] as const) : (["10:00"] as const);
-  return times.slice(1).map((t, i) => `محاضرة ${labels[i]} → ${toDisplayTime(t)}`).join(" | ");
+  return times
+    .slice(1)
+    .map((t, i) => `محاضرة ${labels[i]} → ${toDisplayTime(t)}`)
+    .join(" | ");
 }

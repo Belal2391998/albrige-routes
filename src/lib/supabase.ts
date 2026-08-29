@@ -5,10 +5,10 @@ const anonKey = import.meta.env["VITE_SUPABASE_ANON_KEY"] as string | undefined;
 
 export const isSupabaseConfigured = Boolean(
   url &&
-    anonKey &&
-    !url.includes("YOUR_PROJECT") &&
-    !anonKey.includes("YOUR_ANON_KEY") &&
-    url.startsWith("http"),
+  anonKey &&
+  !url.includes("YOUR_PROJECT") &&
+  !anonKey.includes("YOUR_ANON_KEY") &&
+  url.startsWith("http"),
 );
 
 let client: SupabaseClient | null = null;

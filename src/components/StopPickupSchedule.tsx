@@ -10,6 +10,8 @@ type StopPickupScheduleProps = {
   /** Fallback when no structured schedule exists */
   departureTime?: string;
   compact?: boolean;
+  /** Two-column grid for horizontal carousel cards */
+  horizontal?: boolean;
   /** When set, skips ScheduleContext lookup (avoids re-renders in lists) */
   showOfficeHours?: boolean;
   className?: string;
@@ -20,6 +22,7 @@ export function StopPickupSchedule({
   stopOrder,
   departureTime,
   compact = false,
+  horizontal = false,
   showOfficeHours: showOfficeHoursProp,
   className,
 }: StopPickupScheduleProps) {
@@ -60,20 +63,68 @@ export function StopPickupSchedule({
           <span className="min-w-0">{t.pickupScheduleTitle}</span>
         </div>
 
-        <ul className="divide-y divide-amber-400/15 px-1 py-0.5">
+        <ul
+          className={cn(
+            "divide-y divide-amber-400/15 px-1 py-0.5",
+            horizontal &&
+              "grid grid-cols-2 divide-y-0 gap-1 p-1.5 [&>li]:rounded-lg [&>li]:border [&>li]:border-amber-400/15",
+          )}
+        >
           {slots.map((slot, i) => (
             <li
               key={slot.lectureLabel}
               className={cn(
                 "flex items-center justify-between gap-1 px-1.5 py-1",
                 i === 0 && "bg-amber-500/[0.08]",
+                horizontal && "flex-col items-stretch gap-0.5 px-2 py-1.5",
               )}
             >
               <span className="shrink-0 rounded bg-white/80 px-1.5 py-0.5 text-[10px] font-bold leading-none text-amber-800 dark:bg-slate-900/70 dark:text-amber-200">
                 {slot.lectureLabel}
               </span>
-              <ArrowLeft className="size-2.5 shrink-0 text-amber-500/75" strokeWidth={2.5} aria-hidden />
+              {!horizontal && (
+                <ArrowLeft
+                  className="size-2.5 shrink-0 text-amber-500/75"
+                  strokeWidth={2.5}
+                  aria-hidden
+                />
+              )}
               <span className="shrink-0 whitespace-nowrap text-[11px] font-black leading-none tabular-nums text-slate-900 dark:text-white">
+                {slot.pickupTime}
+              </span>
+            </li>
+          ))}
+        </ul>
+      </div>
+    );
+  }
+
+  if (horizontal) {
+    return (
+      <div
+        className={cn(
+          "w-full min-w-0 overflow-hidden rounded-xl border border-amber-400/30 bg-gradient-to-b from-amber-500/[0.12] to-amber-400/[0.04]",
+          className,
+        )}
+        dir="rtl"
+      >
+        <div className="flex items-center gap-1.5 border-b border-amber-400/20 bg-amber-500/10 px-2.5 py-1.5 text-[11px] font-extrabold text-amber-900 dark:text-amber-100">
+          <Clock3 className="size-3.5 shrink-0 text-amber-600" />
+          {t.pickupScheduleTitle}
+        </div>
+        <ul className="grid grid-cols-2 gap-1.5 p-2">
+          {slots.map((slot, i) => (
+            <li
+              key={slot.lectureLabel}
+              className={cn(
+                "flex flex-col gap-0.5 rounded-lg border border-amber-400/20 bg-white/60 px-2 py-1.5 dark:bg-slate-900/40",
+                i === 0 && "ring-1 ring-amber-400/40",
+              )}
+            >
+              <span className="text-[10px] font-bold text-amber-800 dark:text-amber-200">
+                {t.lectureAt(slot.lectureLabel)}
+              </span>
+              <span className="text-sm font-black tabular-nums text-slate-900 dark:text-white">
                 {slot.pickupTime}
               </span>
             </li>

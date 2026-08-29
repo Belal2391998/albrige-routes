@@ -19,8 +19,10 @@ function trafficLabel(
 }
 
 function trafficTone(status: TrafficStatus | undefined) {
-  if (status === "moderate") return "border-amber-500/40 bg-amber-500/10 text-amber-700 dark:text-amber-300";
-  if (status === "congested") return "border-rose-500/40 bg-rose-500/10 text-rose-700 dark:text-rose-300";
+  if (status === "moderate")
+    return "border-amber-500/40 bg-amber-500/10 text-amber-700 dark:text-amber-300";
+  if (status === "congested")
+    return "border-rose-500/40 bg-rose-500/10 text-rose-700 dark:text-rose-300";
   return "border-emerald-500/40 bg-emerald-500/10 text-emerald-700 dark:text-emerald-300";
 }
 
@@ -61,7 +63,9 @@ export function StopModal({
                 >
                   {t.stopNumber(stop.order)}
                 </span>
-                <h3 className="text-xl font-extrabold text-foreground">{pick(stop.name, locale)}</h3>
+                <h3 className="text-xl font-extrabold text-foreground">
+                  {pick(stop.name, locale)}
+                </h3>
               </div>
               <button onClick={onClose} aria-label={t.close} className="text-muted-foreground">
                 <X className="size-5" />

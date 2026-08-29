@@ -55,7 +55,10 @@ const ROUTE_NODES: { cx: number; cy: number; delay: string }[] = [
 
 function TransitRouteGrid() {
   return (
-    <div className="pointer-events-none absolute inset-0 overflow-hidden opacity-[0.14]" aria-hidden>
+    <div
+      className="pointer-events-none absolute inset-0 overflow-hidden opacity-[0.14]"
+      aria-hidden
+    >
       <svg
         viewBox="0 0 1200 420"
         preserveAspectRatio="xMidYMid slice"
@@ -219,7 +222,10 @@ export function LineHeroBanner({ line }: { line: Line }) {
         }}
         aria-hidden
       />
-      <div className="pointer-events-none absolute inset-x-0 bottom-0 h-28 bg-gradient-to-t from-[#060D1A] to-transparent" aria-hidden />
+      <div
+        className="pointer-events-none absolute inset-x-0 bottom-0 h-28 bg-gradient-to-t from-[#060D1A] to-transparent"
+        aria-hidden
+      />
 
       <div className="relative z-10 mx-auto flex max-w-4xl flex-col items-center">
         {/* Back navigation */}
@@ -312,11 +318,7 @@ export function LineHeroBanner({ line }: { line: Line }) {
           <motion.div
             animate={{ opacity: [1, 0.88, 1] }}
             transition={{ duration: 3.4, repeat: Infinity, ease: "easeInOut" }}
-            className={cn(
-              "animate-hero-traffic-pulse",
-              metaPillClass,
-              trafficTone,
-            )}
+            className={cn("animate-hero-traffic-pulse", metaPillClass, trafficTone)}
           >
             <CheckCircle2 className={cn("size-4 shrink-0", trafficIconTone)} />
             <span>{trafficLabel}</span>
@@ -345,7 +347,9 @@ export function LineHeroBanner({ line }: { line: Line }) {
               ))}
             </div>
             {line.id === 4 ? (
-              <p className="mt-2 text-[11px] font-medium text-slate-300/80">{t.returnDeparturesSaltNote}</p>
+              <p className="mt-2 text-[11px] font-medium text-slate-300/80">
+                {t.returnDeparturesSaltNote}
+              </p>
             ) : null}
           </motion.div>
         ) : null}
