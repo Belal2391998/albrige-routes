@@ -82,12 +82,15 @@ function buildDiagonalRoad(count: number, width: number): RoadGeometry {
   const n = Math.max(count, 1);
   const narrow = width < 640;
   const padY = narrow ? 96 : 110;
-  const rowGap = narrow ? 170 : 186;
+  const rowGap = narrow ? 198 : 186;
   const height = padY * 2 + Math.max(0, n - 1) * rowGap;
   const edgePad = narrow ? 12 : 20;
   const halfCol = width / 2 - edgePad;
-  const cardWidth = Math.min(narrow ? 160 : 280, Math.floor(halfCol * 0.62));
-  const roadClearance = narrow ? 26 : 36;
+  const roadClearance = narrow ? 22 : 36;
+  const maxCardWidth = Math.floor(width / 2 - roadClearance - edgePad);
+  const cardWidth = narrow
+    ? Math.min(Math.floor(halfCol - 6), maxCardWidth)
+    : Math.min(280, Math.floor(halfCol * 0.62));
   const cx = width / 2;
   const roadHalf = narrow ? 20 : 30;
   const leftBound = cx - roadHalf;
@@ -121,7 +124,7 @@ function buildDiagonalRoad(count: number, width: number): RoadGeometry {
     d += ` C ${cp1x.toFixed(2)} ${cp1y.toFixed(2)}, ${cp2x.toFixed(2)} ${cp2y.toFixed(2)}, ${p2.x.toFixed(2)} ${p2.y.toFixed(2)}`;
   }
 
-  return { d, width, height, cardWidth: Math.max(128, cardWidth), edgePad, roadClearance };
+  return { d, width, height, cardWidth: Math.max(narrow ? 118 : 128, cardWidth), edgePad, roadClearance };
 }
 
 /** Strict zigzag: 1st left, 2nd right, 3rd left… */
@@ -778,7 +781,7 @@ function StopCard({
       }}
       className={cn(
         "group relative cursor-pointer overflow-hidden rounded-2xl border backdrop-blur-xl",
-        compact ? "p-2.5" : "p-3 sm:p-3.5",
+        compact ? "p-2" : "p-3 sm:p-3.5",
         active
           ? "z-10 border-amber-400/80 bg-white/95 shadow-xl shadow-amber-500/25 ring-2 ring-amber-500 dark:bg-slate-900/95"
           : "border-slate-200/60 bg-white/80 hover:border-slate-300 dark:border-slate-800/50 dark:bg-slate-900/50 dark:hover:border-slate-700",
@@ -808,40 +811,43 @@ function StopCard({
         <h3
           className={cn(
             "font-black leading-snug text-slate-900 dark:text-white",
-            compact ? "text-sm" : "text-base sm:text-lg",
+            compact ? "text-[13px] leading-tight" : "text-base sm:text-lg",
           )}
         >
           {pick(stop.name, locale)}
         </h3>
         <p
           className={cn(
-            "mt-1 flex items-start gap-1.5 font-medium text-slate-500 dark:text-slate-400",
-            compact ? "text-[11px]" : "text-xs sm:text-sm",
+            "mt-1 flex items-start gap-1 font-medium text-slate-500 dark:text-slate-400",
+            compact ? "text-[10px] leading-snug" : "text-xs sm:text-sm",
           )}
         >
-          <MapPin className="mt-0.5 size-3.5 shrink-0 text-amber-500 sm:size-4" />
-          <span className="line-clamp-2">{pick(stop.landmarkDescription, locale)}</span>
+          <MapPin className={cn("mt-0.5 shrink-0 text-amber-500", compact ? "size-3" : "size-3.5 sm:size-4")} />
+          <span className={cn(compact ? "line-clamp-3" : "line-clamp-2")}>
+            {pick(stop.landmarkDescription, locale)}
+          </span>
         </p>
       </div>
 
-      <div className="mt-2.5 flex flex-col items-stretch gap-1.5 text-start" dir="rtl">
+      <div className="mt-2 flex w-full min-w-0 flex-col items-stretch gap-1.5 text-start" dir="rtl">
         <StopPickupSchedule
           lineId={stop.lineId}
           stopOrder={stop.order}
           departureTime={stop.departureTime}
           compact={compact ?? false}
+          className="w-full"
         />
 
-        <div className="flex flex-wrap items-center gap-1.5">
+        <div className="flex flex-wrap items-center gap-1">
           {distanceKm ? (
-            <span className="inline-flex items-center rounded-full bg-slate-500/10 px-2 py-0.5 text-xs font-semibold text-slate-500 dark:text-slate-400">
+            <span className="inline-flex items-center rounded-full bg-slate-500/10 px-1.5 py-0.5 text-[10px] font-semibold text-slate-500 sm:px-2 sm:text-xs dark:text-slate-400">
               {t.kmAway(distanceKm)}
             </span>
           ) : null}
 
           <span
             className={cn(
-              "inline-flex items-center rounded-full border px-2 py-0.5 text-xs font-semibold",
+              "inline-flex items-center rounded-full border px-1.5 py-0.5 text-[10px] font-semibold sm:px-2 sm:text-xs",
               trafficTone(stop.trafficStatus),
             )}
           >
@@ -849,7 +855,7 @@ function StopCard({
           </span>
 
           {active && (
-            <span className="inline-flex items-center gap-1.5 rounded-full bg-amber-500/15 px-2 py-0.5 text-xs font-semibold text-amber-700 dark:text-amber-300">
+            <span className="inline-flex items-center gap-1 rounded-full bg-amber-500/15 px-1.5 py-0.5 text-[10px] font-semibold text-amber-700 sm:px-2 sm:text-xs dark:text-amber-300">
               <span className="relative flex size-1.5">
                 <span className="absolute inline-flex size-full animate-ping rounded-full bg-amber-400 opacity-70" />
                 <span className="relative inline-flex size-1.5 rounded-full bg-amber-500" />
@@ -866,7 +872,7 @@ function StopCard({
           e.stopPropagation();
           onGoToMaps();
         }}
-        className="mt-2.5 inline-flex w-full items-center justify-center gap-1.5 rounded-xl border border-amber-500/40 bg-gradient-to-l from-amber-500/15 to-amber-400/5 px-2.5 py-2 text-[11px] font-extrabold leading-snug text-amber-800 shadow-sm transition-colors hover:from-amber-500 hover:to-amber-400 hover:text-slate-950 dark:text-amber-300"
+        className="mt-2 inline-flex min-h-10 w-full items-center justify-center gap-1 rounded-xl border border-amber-500/40 bg-gradient-to-l from-amber-500/15 to-amber-400/5 px-2 py-2.5 text-[10px] font-extrabold leading-snug text-amber-800 shadow-sm transition-colors hover:from-amber-500 hover:to-amber-400 hover:text-slate-950 sm:min-h-11 sm:px-2.5 sm:text-[11px] dark:text-amber-300"
       >
         <ExternalLink className="size-3.5 shrink-0" />
         <span>{t.previewLocation}</span>
