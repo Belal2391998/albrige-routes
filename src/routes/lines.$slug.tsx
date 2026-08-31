@@ -92,7 +92,7 @@ function LineView({ slug }: { slug: string }) {
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.15, duration: 0.45 }}
-        className="relative w-full overflow-x-hidden overflow-y-visible bg-slate-50/50 pb-4 pt-4 transition-colors dark:bg-slate-950/90 md:pb-36"
+        className="relative w-full overflow-x-hidden overflow-y-visible bg-slate-50/50 px-1 pb-4 pt-3 transition-colors dark:bg-slate-950/90 sm:px-0 sm:pt-4 md:pb-36"
       >
         <div
           className="pointer-events-none absolute inset-0 opacity-50 [mask-image:radial-gradient(ellipse_at_center,black_35%,transparent_80%)] dark:opacity-55"

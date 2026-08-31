@@ -46,6 +46,8 @@ const ASPHALT = "#1E293B";
 const SPRING = { type: "spring" as const, stiffness: 110, damping: 16, mass: 0.85 };
 const SWIPE = 48;
 const BUS_SIZE = 44;
+/** Below this width: horizontal carousel instead of zigzag road map */
+const MOBILE_LAYOUT_MAX = 768;
 
 type RoadPoint = { x: number; y: number };
 type StationPose = {
@@ -84,7 +86,7 @@ function reducedMotion() {
  */
 function buildDiagonalRoad(count: number, width: number): RoadGeometry {
   const n = Math.max(count, 1);
-  const narrow = width < 640;
+  const narrow = width < MOBILE_LAYOUT_MAX;
   /** Full stop card height incl. schedule table + map button */
   const cardFull = narrow ? 300 : 420;
   const cardHalf = Math.ceil(cardFull / 2);
@@ -294,6 +296,11 @@ export function RouteStepper({
   const [mapWidth, setMapWidth] = useState(() =>
     typeof window !== "undefined" ? Math.max(300, window.innerWidth) : 390,
   );
+  const [viewportMobile, setViewportMobile] = useState(() =>
+    typeof window !== "undefined"
+      ? window.matchMedia(`(max-width: ${MOBILE_LAYOUT_MAX - 1}px)`).matches
+      : true,
+  );
   const [pathLength, setPathLength] = useState(0);
   const [stations, setStations] = useState<StationPose[]>([]);
   const [reduceMotion, setReduceMotion] = useState(false);
@@ -330,7 +337,7 @@ export function RouteStepper({
   }, [activeStop, line.stops, safeIndex]);
 
   const road = useMemo(() => buildDiagonalRoad(total, mapWidth), [total, mapWidth]);
-  const isMobileLayout = mapWidth < 640;
+  const isMobileLayout = viewportMobile || mapWidth < MOBILE_LAYOUT_MAX;
   const progressMV = useMotionValue(0);
   const roadStroke = mapWidth < 560 ? 26 : 34;
 
@@ -377,7 +384,16 @@ export function RouteStepper({
     setReduceMotion(window.matchMedia("(prefers-reduced-motion: reduce)").matches);
   }, []);
 
+  useEffect(() => {
+    const mq = window.matchMedia(`(max-width: ${MOBILE_LAYOUT_MAX - 1}px)`);
+    const apply = () => setViewportMobile(mq.matches);
+    apply();
+    mq.addEventListener("change", apply);
+    return () => mq.removeEventListener("change", apply);
+  }, []);
+
   useLayoutEffect(() => {
+    if (isMobileLayout) return;
     const path = pathRef.current;
     if (!path) return;
     try {
@@ -388,17 +404,17 @@ export function RouteStepper({
     } catch (error) {
       console.error("[RouteStepper] failed to measure route path", error);
     }
-  }, [road.d, total]);
+  }, [road.d, total, isMobileLayout]);
 
   useLayoutEffect(() => {
-    if (pathLength <= 0) return;
+    if (isMobileLayout || pathLength <= 0) return;
     const target = total <= 1 ? 0 : safeIndex / (total - 1);
     progressMV.set(target);
     applyPose(target, pathLength);
-  }, [safeIndex, pathLength, total, applyPose, progressMV]);
+  }, [safeIndex, pathLength, total, applyPose, progressMV, isMobileLayout]);
 
   useEffect(() => {
-    if (pathLength <= 0) return;
+    if (isMobileLayout || pathLength <= 0) return;
     const target = total <= 1 ? 0 : safeIndex / (total - 1);
     try {
       const controls = animate(
@@ -413,7 +429,7 @@ export function RouteStepper({
       applyPose(target, pathLength);
       return undefined;
     }
-  }, [safeIndex, pathLength, progressMV, total, applyPose]);
+  }, [safeIndex, pathLength, progressMV, total, applyPose, isMobileLayout]);
 
   useMotionValueEvent(progressMV, "change", (v) => {
     applyPose(v, pathLengthRef.current);
@@ -517,12 +533,12 @@ export function RouteStepper({
       ref={shellRef}
       className="relative w-full min-w-full overflow-x-hidden overflow-y-visible bg-transparent transition-colors"
     >
-      <div className="relative z-10 w-full min-w-full px-6 md:px-12">
+      <div className="relative z-10 w-full min-w-full px-3 sm:px-6 md:px-12">
         <div
-          className="w-full max-w-none overflow-x-hidden overflow-y-visible border-y border-slate-200/40 bg-white/45 py-4 backdrop-blur-xl dark:border-slate-800/40 dark:bg-slate-950/40 sm:py-5"
-          {...mapSwipe}
+          className="w-full max-w-none overflow-x-hidden overflow-y-visible border-y border-slate-200/40 bg-white/45 py-3 backdrop-blur-xl dark:border-slate-800/40 dark:bg-slate-950/40 sm:py-5"
+          {...(isMobileLayout ? {} : mapSwipe)}
         >
-          <div className="relative z-30 mb-5 flex w-full max-w-none flex-wrap items-center justify-between gap-3">
+          <div className="relative z-30 mb-4 flex w-full max-w-none flex-wrap items-center justify-between gap-2 sm:mb-5 sm:gap-3">
             <p className="min-w-0 truncate text-xs font-bold text-slate-500 dark:text-slate-400">
               {t.stopProgress(safeIndex + 1, total, pick(activeStop.name, locale))}
             </p>
@@ -606,36 +622,36 @@ export function RouteStepper({
               </div>
 
               {/* بطاقات — تمرير أفقي */}
-              <div className="relative">
-                <div className="pointer-events-none absolute inset-y-0 start-0 z-10 w-6 bg-gradient-to-r from-white/95 to-transparent dark:from-slate-950/95" />
-                <div className="pointer-events-none absolute inset-y-0 end-0 z-10 w-6 bg-gradient-to-l from-white/95 to-transparent dark:from-slate-950/95" />
+              <div className="relative touch-pan-x">
+                <div className="pointer-events-none absolute inset-y-0 start-0 z-10 w-4 bg-gradient-to-r from-white/95 to-transparent sm:w-6 dark:from-slate-950/95" />
+                <div className="pointer-events-none absolute inset-y-0 end-0 z-10 w-4 bg-gradient-to-l from-white/95 to-transparent sm:w-6 dark:from-slate-950/95" />
 
-                <div className="absolute inset-y-0 start-0 z-20 flex items-center">
+                <div className="absolute inset-y-0 start-0 z-20 flex items-center ps-0.5">
                   <button
                     type="button"
                     onClick={goPrev}
                     disabled={safeIndex === 0}
                     aria-label={t.prevStop}
-                    className="inline-flex size-8 items-center justify-center rounded-full border border-slate-200/80 bg-white/95 text-slate-700 shadow-md disabled:opacity-30 dark:border-slate-700 dark:bg-slate-900/95 dark:text-slate-200"
+                    className="inline-flex size-7 items-center justify-center rounded-full border border-slate-200/80 bg-white/95 text-slate-700 shadow-md disabled:opacity-30 sm:size-8 dark:border-slate-700 dark:bg-slate-900/95 dark:text-slate-200"
                   >
-                    <PrevIcon className="size-4" />
+                    <PrevIcon className="size-3.5 sm:size-4" />
                   </button>
                 </div>
-                <div className="absolute inset-y-0 end-0 z-20 flex items-center">
+                <div className="absolute inset-y-0 end-0 z-20 flex items-center pe-0.5">
                   <button
                     type="button"
                     onClick={goNext}
                     disabled={safeIndex === total - 1}
                     aria-label={t.nextStop}
-                    className="inline-flex size-8 items-center justify-center rounded-full border border-slate-200/80 bg-white/95 text-slate-700 shadow-md disabled:opacity-30 dark:border-slate-700 dark:bg-slate-900/95 dark:text-slate-200"
+                    className="inline-flex size-7 items-center justify-center rounded-full border border-slate-200/80 bg-white/95 text-slate-700 shadow-md disabled:opacity-30 sm:size-8 dark:border-slate-700 dark:bg-slate-900/95 dark:text-slate-200"
                   >
-                    <NextIcon className="size-4" />
+                    <NextIcon className="size-3.5 sm:size-4" />
                   </button>
                 </div>
 
                 <div
                   ref={carouselRef}
-                  className="flex snap-x snap-mandatory gap-3 overflow-x-auto overscroll-x-contain scroll-smooth px-9 pb-2 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+                  className="flex snap-x snap-mandatory gap-3 overflow-x-auto overscroll-x-contain scroll-smooth scroll-px-[2.25rem] px-9 pb-1 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
                   dir="ltr"
                 >
                   {line.stops.map((stop, i) => {
@@ -650,8 +666,8 @@ export function RouteStepper({
                           cardRefs.current[i] = node;
                         }}
                         className={cn(
-                          "w-[min(calc(100vw-5.5rem),20.5rem)] shrink-0 snap-center transition-[transform,opacity] duration-300",
-                          active ? "scale-100 opacity-100" : "scale-[0.97] opacity-85",
+                          "w-[min(calc(100vw-4.5rem),18.5rem)] shrink-0 snap-center sm:w-[min(calc(100vw-5.5rem),20.5rem)]",
+                          active ? "opacity-100" : "opacity-90",
                         )}
                         dir={dir}
                       >
@@ -661,7 +677,7 @@ export function RouteStepper({
                           distanceKm={distKm}
                           side={cardSide(i)}
                           index={i}
-                          compact={false}
+                          compact
                           listLayout
                           reduceMotion={reduceMotion}
                           showOfficeHours={settings.showOfficeHours}
@@ -902,7 +918,7 @@ export function RouteStepper({
 
       <div
         className={cn(
-          "z-40 w-full max-w-none px-6 md:px-12",
+          "z-40 w-full max-w-none px-3 sm:px-6 md:px-12",
           isMobileLayout
             ? "relative mt-3 pb-[max(0.5rem,env(safe-area-inset-bottom))] pt-2"
             : "pointer-events-none fixed inset-x-0 bottom-0 pb-[max(0.75rem,env(safe-area-inset-bottom))] pt-6",
@@ -1024,7 +1040,7 @@ function StopCard({
       }}
       initial={reduceMotion || listLayout ? false : { opacity: 0, x: fromX, scale: 0.94 }}
       animate={{
-        opacity: active ? 1 : listLayout ? 0.88 : 0.9,
+        opacity: active ? 1 : listLayout ? 0.95 : 0.9,
         x: 0,
         scale: listLayout ? 1 : active ? 1.02 : 1,
         y: 0,
@@ -1038,7 +1054,7 @@ function StopCard({
       }}
       className={cn(
         "group relative w-full cursor-pointer overflow-hidden rounded-2xl border backdrop-blur-xl",
-        listLayout ? "p-3.5" : compact ? "p-2" : "p-3 sm:p-3.5",
+        listLayout ? "p-3" : compact ? "p-2" : "p-3 sm:p-3.5",
         active
           ? "z-10 border-amber-400/80 bg-white/95 shadow-xl shadow-amber-500/25 ring-2 ring-amber-500 dark:bg-slate-900/95"
           : "border-slate-200/60 bg-white/80 hover:border-slate-300 dark:border-slate-800/50 dark:bg-slate-900/50 dark:hover:border-slate-700",
@@ -1082,10 +1098,10 @@ function StopCard({
             }}
             className="min-w-0 flex-1 text-start"
           >
-            <h3 className="font-black leading-snug text-slate-900 dark:text-white text-base">
+            <h3 className="text-base font-black leading-snug text-slate-900 dark:text-white">
               {pick(stop.name, locale)}
             </h3>
-            <p className="mt-1 flex items-start gap-1 text-xs font-medium leading-snug text-slate-500 dark:text-slate-400">
+            <p className="mt-1 flex items-start gap-1 text-[11px] font-medium leading-snug text-slate-500 sm:text-xs dark:text-slate-400">
               <MapPin className="mt-0.5 size-3.5 shrink-0 text-amber-500" />
               <span className="line-clamp-2">{pick(stop.landmarkDescription, locale)}</span>
             </p>
@@ -1137,8 +1153,8 @@ function StopCard({
           lineId={stop.lineId}
           stopOrder={stop.order}
           departureTime={stop.departureTime}
-          compact={listLayout ? false : (compact ?? false)}
-          horizontal={listLayout}
+          compact={listLayout || (compact ?? false)}
+          horizontal={false}
           showOfficeHours={showOfficeHours}
           className="w-full"
         />
@@ -1177,7 +1193,7 @@ function StopCard({
           e.stopPropagation();
           onGoToMaps();
         }}
-        className="mt-2 inline-flex min-h-10 w-full items-center justify-center gap-1 rounded-xl border border-amber-500/40 bg-gradient-to-l from-amber-500/15 to-amber-400/5 px-2 py-2.5 text-[10px] font-extrabold leading-snug text-amber-800 shadow-sm transition-colors hover:from-amber-500 hover:to-amber-400 hover:text-slate-950 sm:min-h-11 sm:px-2.5 sm:text-[11px] dark:text-amber-300"
+        className="mt-2 inline-flex min-h-10 w-full items-center justify-center gap-1 rounded-xl border border-amber-500/40 bg-gradient-to-l from-amber-500/15 to-amber-400/5 px-2 py-2 text-[10px] font-extrabold leading-snug text-amber-800 shadow-sm transition-colors hover:from-amber-500 hover:to-amber-400 hover:text-slate-950 sm:min-h-11 sm:px-2.5 sm:py-2.5 sm:text-[11px] dark:text-amber-300"
       >
         <ExternalLink className="size-3.5 shrink-0" />
         <span>{t.previewLocation}</span>
