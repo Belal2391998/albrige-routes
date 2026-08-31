@@ -1,3 +1,4 @@
+import { memo } from "react";
 import { ArrowLeft, Clock3 } from "lucide-react";
 import { getPickupSlots } from "@/data/lineLectureSchedules";
 import { useSchedule } from "@/context/ScheduleContext";
@@ -17,18 +18,20 @@ type StopPickupScheduleProps = {
   className?: string;
 };
 
-export function StopPickupSchedule({
+type StopPickupScheduleCoreProps = Omit<StopPickupScheduleProps, "showOfficeHours"> & {
+  showOfficeHours: boolean;
+};
+
+function StopPickupScheduleCore({
   lineId,
   stopOrder,
   departureTime,
   compact = false,
   horizontal = false,
-  showOfficeHours: showOfficeHoursProp,
+  showOfficeHours,
   className,
-}: StopPickupScheduleProps) {
+}: StopPickupScheduleCoreProps) {
   const { t } = useI18n();
-  const schedule = useSchedule();
-  const showOfficeHours = showOfficeHoursProp ?? schedule.settings.showOfficeHours;
   const slots = getPickupSlots(lineId, stopOrder);
 
   if (!showOfficeHours) return null;
@@ -178,4 +181,18 @@ export function StopPickupSchedule({
       </ul>
     </div>
   );
+}
+
+const MemoStopPickupScheduleCore = memo(StopPickupScheduleCore);
+
+function StopPickupScheduleWithSettings(props: StopPickupScheduleProps) {
+  const { settings } = useSchedule();
+  return <MemoStopPickupScheduleCore {...props} showOfficeHours={settings.showOfficeHours} />;
+}
+
+export function StopPickupSchedule(props: StopPickupScheduleProps) {
+  if (props.showOfficeHours !== undefined) {
+    return <MemoStopPickupScheduleCore {...props} showOfficeHours={props.showOfficeHours} />;
+  }
+  return <StopPickupScheduleWithSettings {...props} />;
 }

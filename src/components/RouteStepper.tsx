@@ -461,6 +461,8 @@ export function RouteStepper({
     });
   }, [safeIndex, isMobileLayout, reduceMotion]);
 
+  const observerDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
   useEffect(() => {
     if (!isMobileLayout) return;
     const root = carouselRef.current;
@@ -477,18 +479,23 @@ export function RouteStepper({
             best = { index: idx, ratio: entry.intersectionRatio };
           }
         }
-        if (best && best.index !== activeIndexRef.current) {
+        if (!best || best.index === activeIndexRef.current) return;
+        if (observerDebounceRef.current) clearTimeout(observerDebounceRef.current);
+        observerDebounceRef.current = setTimeout(() => {
           skipScroll.current = true;
-          onActiveChange(best.index);
-        }
+          onActiveChange(best!.index);
+        }, 120);
       },
-      { root, threshold: [0.45, 0.6, 0.75] },
+      { root, threshold: [0.55, 0.7] },
     );
 
     cardRefs.current.forEach((node) => {
       if (node) observer.observe(node);
     });
-    return () => observer.disconnect();
+    return () => {
+      observer.disconnect();
+      if (observerDebounceRef.current) clearTimeout(observerDebounceRef.current);
+    };
   }, [isMobileLayout, line.stops.length, onActiveChange]);
 
   const findNearest = () => {
@@ -790,24 +797,16 @@ export function RouteStepper({
                 if (!stop) return null;
                 const status = getStopStatus(i, safeIndex);
                 return (
-                  <motion.button
+                  <button
                     key={`node-${stop.id}`}
                     type="button"
                     aria-label={pick(stop.name, locale)}
                     onClick={() => goTo(i)}
-                    initial={{ scale: 0, opacity: 0 }}
-                    animate={{ scale: 1, opacity: 1 }}
-                    transition={{
-                      type: "spring",
-                      stiffness: 380,
-                      damping: 18,
-                      delay: Math.min(i * 0.04, 0.4),
-                    }}
                     className="absolute z-20 -translate-x-1/2 -translate-y-1/2 focus-visible:outline-none"
                     style={{ left: pt.x, top: pt.y }}
                   >
                     <RoadNode status={status} order={stop.order} />
-                  </motion.button>
+                  </button>
                 );
               })}
 
@@ -1045,11 +1044,18 @@ function StopCard({
         scale: listLayout ? 1 : active ? 1.02 : 1,
         y: 0,
       }}
-      {...(listLayout ? {} : { whileHover: { opacity: 1, scale: active ? 1.05 : 1.02 } })}
+      {...(listLayout || reduceMotion
+        ? {}
+        : { whileHover: { opacity: 1, scale: active ? 1.05 : 1.02 } })}
       transition={{
-        opacity: { duration: 0.35, delay: Math.min(index * 0.05, 0.45) },
-        x: { type: "spring", stiffness: 260, damping: 22, delay: Math.min(index * 0.05, 0.45) },
-        scale: SPRING,
+        opacity: {
+          duration: listLayout ? 0.2 : 0.35,
+          delay: listLayout ? 0 : Math.min(index * 0.05, 0.45),
+        },
+        x: listLayout
+          ? { duration: 0.2 }
+          : { type: "spring", stiffness: 260, damping: 22, delay: Math.min(index * 0.05, 0.45) },
+        scale: listLayout ? { duration: 0.2 } : SPRING,
         y: { duration: 0.3 },
       }}
       className={cn(

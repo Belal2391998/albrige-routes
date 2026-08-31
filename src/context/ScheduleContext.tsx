@@ -13,6 +13,7 @@ import {
   createEmptyRoute,
   createEmptyStation,
   loadNetwork,
+  readLocalNetwork,
   persistNetwork,
 } from "@/lib/networkRepository";
 import { managedRouteToLine, seedNetworkFromStaticLines, snapshotToLines } from "@/lib/networkSeed";
@@ -121,23 +122,30 @@ export function ScheduleProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     let cancelled = false;
-    (async () => {
+    try {
+      const local = readLocalNetwork();
+      snapshotRef.current = local;
+      setSnapshot(local);
+      setReady(true);
+      setIsAdminUnlocked(window.sessionStorage.getItem(AUTH_KEY) === "1");
+    } catch {
+      setIsAdminUnlocked(false);
+    }
+
+    void (async () => {
       try {
         const { snapshot: loaded, source } = await loadNetwork();
-        if (!cancelled) {
+        if (cancelled) return;
+        if (loaded.updatedAt !== snapshotRef.current.updatedAt) {
           snapshotRef.current = loaded;
           setSnapshot(loaded);
-          setStorageMode(source);
         }
-      } finally {
-        if (!cancelled) setReady(true);
-      }
-      try {
-        setIsAdminUnlocked(window.sessionStorage.getItem(AUTH_KEY) === "1");
-      } catch {
-        setIsAdminUnlocked(false);
+        setStorageMode(source);
+      } catch (err) {
+        console.error("[ScheduleContext] network refresh failed", err);
       }
     })();
+
     return () => {
       cancelled = true;
     };
