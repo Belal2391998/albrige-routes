@@ -85,7 +85,9 @@ function reducedMotion() {
 function buildDiagonalRoad(count: number, width: number): RoadGeometry {
   const n = Math.max(count, 1);
   const narrow = width < 640;
-  const padY = narrow ? 96 : 110;
+  /** Room for half a stop card above/below first & last nodes (translateY -50%) */
+  const cardHalf = narrow ? 120 : 210;
+  const padY = (narrow ? 96 : 110) + cardHalf;
   const rowGap = narrow ? 198 : 186;
   const height = padY * 2 + Math.max(0, n - 1) * rowGap;
   const edgePad = narrow ? 12 : 20;
@@ -511,11 +513,11 @@ export function RouteStepper({
   return (
     <div
       ref={shellRef}
-      className="relative w-full min-w-full overflow-hidden bg-transparent transition-colors"
+      className="relative w-full min-w-full overflow-x-hidden overflow-y-visible bg-transparent transition-colors"
     >
       <div className="relative z-10 w-full min-w-full px-6 md:px-12">
         <div
-          className="w-full max-w-none overflow-hidden border-y border-slate-200/40 bg-white/45 py-4 backdrop-blur-xl dark:border-slate-800/40 dark:bg-slate-950/40 sm:py-5"
+          className="w-full max-w-none overflow-x-hidden overflow-y-visible border-y border-slate-200/40 bg-white/45 py-4 backdrop-blur-xl dark:border-slate-800/40 dark:bg-slate-950/40 sm:py-5"
           {...mapSwipe}
         >
           <div className="relative z-30 mb-5 flex w-full max-w-none flex-wrap items-center justify-between gap-3">
@@ -683,7 +685,7 @@ export function RouteStepper({
             </div>
           ) : (
             <div
-              className="relative z-0 touch-pan-y overflow-x-clip overflow-y-visible pt-2"
+              className="relative z-0 touch-pan-y overflow-x-clip overflow-y-visible pb-4 pt-2"
               style={{ height: road.height, minHeight: road.height }}
             >
               <svg

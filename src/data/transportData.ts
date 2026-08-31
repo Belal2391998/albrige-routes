@@ -653,7 +653,7 @@ export const lines: Line[] = [
         "منطقة الياسمين — القويسمة",
         "Al-Yasmeen area — Al-Quwaysimah",
         "07:30 AM",
-        // No Maps link was provided — pin placed in Al-Yasmeen near Hayy Al-Sahaba
+        "https://www.google.com/maps?q=31.9168,35.8892",
       ],
     ]),
   },
