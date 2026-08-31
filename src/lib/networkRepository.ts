@@ -1,5 +1,6 @@
 import { getSupabase, isSupabaseConfigured } from "@/lib/supabase";
 import { seedNetworkFromStaticLines } from "@/lib/networkSeed";
+import { isValidUuid, routeStableId, stationStableId } from "@/lib/stableUuid";
 import type {
   AppSettings,
   ManagedRoute,
@@ -13,7 +14,8 @@ import { DEFAULT_APP_SETTINGS, newId } from "@/lib/networkTypes";
 
 const LOCAL_KEY = "albridge_network_v6";
 const LEGACY_LOCAL_KEY = "albridge_network_v5";
-const SUPABASE_TIMEOUT_MS = 3000;
+const SUPABASE_FETCH_TIMEOUT_MS = 4000;
+const SUPABASE_PUSH_TIMEOUT_MS = 15000;
 
 function withTimeout<T>(promise: Promise<T>, ms: number, label: string): Promise<T> {
   return new Promise((resolve, reject) => {
@@ -61,12 +63,37 @@ function normalizeSnapshot(raw: unknown): NetworkSnapshot | null {
   if (!raw || typeof raw !== "object") return null;
   const s = raw as NetworkSnapshot;
   if (s.version !== 1 || !Array.isArray(s.routes)) return null;
-  return {
+  return migrateSnapshotIds({
     version: 1,
     routes: s.routes,
     settings: normalizeSettings(s.settings),
     updatedAt: typeof s.updatedAt === "string" ? s.updatedAt : new Date().toISOString(),
-  };
+  });
+}
+
+/** Map legacy string ids (route-line-1) → stable UUIDs for Supabase upsert. */
+export function migrateSnapshotIds(snapshot: NetworkSnapshot): NetworkSnapshot {
+  let changed = false;
+  const routes = snapshot.routes.map((route) => {
+    const routeId = routeStableId(route.slug);
+    if (route.id !== routeId) changed = true;
+    const stations = route.stations.map((station) => {
+      const stationId = stationStableId(route.slug, station.stationIndex);
+      if (station.id !== stationId || station.routeId !== routeId) changed = true;
+      return {
+        ...station,
+        id: stationId,
+        routeId,
+      };
+    });
+    return { ...route, id: routeId, stations };
+  });
+  if (!changed) return snapshot;
+  return { ...snapshot, routes, updatedAt: snapshot.updatedAt };
+}
+
+function snapshotNeedsMigration(snapshot: NetworkSnapshot): boolean {
+  return snapshot.routes.some((r) => !isValidUuid(r.id));
 }
 
 function readLegacyLocalNetwork(): NetworkSnapshot | null {
@@ -101,6 +128,9 @@ export function readLocalNetwork(): NetworkSnapshot {
       const seeded = seedNetworkFromStaticLines();
       window.localStorage.setItem(LOCAL_KEY, JSON.stringify(seeded));
       return seeded;
+    }
+    if (snapshotNeedsMigration(parsed)) {
+      writeLocalNetwork(parsed);
     }
     return parsed;
   } catch {
@@ -317,18 +347,31 @@ export async function loadNetwork(): Promise<{
   try {
     const remote = await withTimeout(
       fetchNetworkFromSupabase(),
-      SUPABASE_TIMEOUT_MS,
+      SUPABASE_FETCH_TIMEOUT_MS,
       "Supabase fetch",
     );
+
     if (remote && remote.routes.length > 0) {
+      const localTs = Date.parse(local.updatedAt) || 0;
+      const remoteTs = Date.parse(remote.updatedAt) || 0;
+      if (localTs > remoteTs) {
+        writeLocalNetwork(local);
+        void withTimeout(pushNetworkToSupabase(local), SUPABASE_PUSH_TIMEOUT_MS, "Supabase push").catch(
+          (err) => console.error("[Albridge] Supabase push newer local failed", err),
+        );
+        return { snapshot: local, source: "supabase" };
+      }
       writeLocalNetwork(remote);
       return { snapshot: remote, source: "supabase" };
     }
+
     const seeded = seedNetworkFromStaticLines();
     writeLocalNetwork(seeded);
-    void pushNetworkToSupabase(seeded).catch((err) => {
-      console.error("[Albridge] Supabase background seed failed", err);
-    });
+    void withTimeout(pushNetworkToSupabase(seeded), SUPABASE_PUSH_TIMEOUT_MS, "Supabase seed").catch(
+      (err) => {
+        console.error("[Albridge] Supabase background seed failed", err);
+      },
+    );
     return { snapshot: seeded, source: "supabase" };
   } catch (err) {
     console.error("[Albridge] Supabase load failed, using local", err);
@@ -337,18 +380,19 @@ export async function loadNetwork(): Promise<{
 }
 
 export async function persistNetwork(snapshot: NetworkSnapshot): Promise<"supabase" | "local"> {
-  const next: NetworkSnapshot = {
+  const next = migrateSnapshotIds({
     ...snapshot,
     settings: normalizeSettings(snapshot.settings),
     updatedAt: new Date().toISOString(),
-  };
+  });
   writeLocalNetwork(next);
   if (isSupabaseConfigured) {
     try {
-      await pushNetworkToSupabase(next);
+      await withTimeout(pushNetworkToSupabase(next), SUPABASE_PUSH_TIMEOUT_MS, "Supabase push");
       return "supabase";
     } catch (err) {
       console.error("[Albridge] Supabase persist failed, kept local", err);
+      throw err;
     }
   }
   return "local";

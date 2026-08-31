@@ -1,6 +1,7 @@
 import {
   Component,
   memo,
+  startTransition,
   useCallback,
   useEffect,
   useLayoutEffect,
@@ -8,6 +9,7 @@ import {
   useRef,
   useState,
   type PointerEvent as ReactPointerEvent,
+  type KeyboardEvent as ReactKeyboardEvent,
   type ReactNode,
 } from "react";
 import { animate, motion, useMotionValue, useMotionValueEvent } from "motion/react";
@@ -16,7 +18,7 @@ import routeBusMarker from "@/assets/route-bus-marker.png";
 import type { Line, Stop, TrafficStatus } from "@/data/transportData";
 import { StopPickupSchedule } from "@/components/StopPickupSchedule";
 import { useSchedule } from "@/context/ScheduleContext";
-import { pick, useI18n } from "@/lib/i18n";
+import { pick, useI18n, type Locale } from "@/lib/i18n";
 import { openStopInMaps } from "@/lib/mapHelpers";
 import { cn } from "@/lib/utils";
 
@@ -208,7 +210,9 @@ function useStepperNav(activeIndex: number, total: number, onActiveChange: (i: n
   const goTo = useCallback(
     (next: number) => {
       const clamped = Math.max(0, Math.min(totalRef.current - 1, next));
-      if (clamped !== indexRef.current) onActiveChange(clamped);
+      if (clamped !== indexRef.current) {
+        startTransition(() => onActiveChange(clamped));
+      }
     },
     [onActiveChange],
   );
@@ -277,19 +281,83 @@ function useStepperNav(activeIndex: number, total: number, onActiveChange: (i: n
   };
 }
 
+const StopPill = memo(
+  function StopPill({
+    stop,
+    index,
+    activeIndex,
+    locale,
+    onSelect,
+  }: {
+    stop: Stop;
+    index: number;
+    activeIndex: number;
+    locale: Locale;
+    onSelect: (index: number) => void;
+  }) {
+    const active = index === activeIndex;
+    const passed = index < activeIndex;
+
+    return (
+      <button
+        type="button"
+        data-pill-index={index}
+        aria-label={pick(stop.name, locale)}
+        aria-current={active ? "step" : undefined}
+        onClick={() => onSelect(index)}
+        className={cn(
+          "inline-flex shrink-0 flex-col items-center gap-1 rounded-2xl border px-2 py-1.5 text-[10px] font-bold",
+          active
+            ? "z-10 min-w-[4.25rem] border-amber-400 bg-[#0B2265] text-amber-100 shadow-lg shadow-amber-500/25"
+            : passed
+              ? "border-emerald-400/40 bg-emerald-500/10 text-emerald-700 dark:text-emerald-300"
+              : "border-slate-200/80 bg-white/90 text-slate-500 dark:border-slate-700 dark:bg-slate-900/80 dark:text-slate-400",
+        )}
+      >
+        <span
+          className={cn(
+            "flex size-7 items-center justify-center rounded-full text-[11px] font-black",
+            active
+              ? "bg-amber-400 text-slate-950 ring-2 ring-amber-200/50"
+              : passed
+                ? "bg-emerald-500/20 text-emerald-700 dark:text-emerald-300"
+                : "bg-slate-100 text-slate-500 dark:bg-slate-800 dark:text-slate-400",
+          )}
+        >
+          {stop.order}
+        </span>
+        <span className="max-w-[4.5rem] truncate leading-tight">{pick(stop.name, locale)}</span>
+      </button>
+    );
+  },
+  (prev, next) => {
+    if (prev.stop.id !== next.stop.id || prev.locale !== next.locale || prev.index !== next.index) {
+      return false;
+    }
+    const prevActive = prev.index === prev.activeIndex;
+    const nextActive = next.index === next.activeIndex;
+    const prevPassed = prev.index < prev.activeIndex;
+    const nextPassed = next.index < next.activeIndex;
+    return prevActive === nextActive && prevPassed === nextPassed;
+  },
+);
+
 export function RouteStepper({
   line,
   activeIndex,
   onActiveChange,
   onOpenStop,
+  showOfficeHours: showOfficeHoursProp,
 }: {
   line: Line;
   activeIndex: number;
   onActiveChange: (i: number) => void;
   onOpenStop: (stop: Stop) => void;
+  showOfficeHours?: boolean;
 }) {
   const { locale, dir, t } = useI18n();
   const { settings } = useSchedule();
+  const showOfficeHours = showOfficeHoursProp ?? settings.showOfficeHours;
   const [nearest, setNearest] = useState<{ stop: Stop; km: number } | null>(null);
   const [locating, setLocating] = useState(false);
   const [geoError, setGeoError] = useState<string | null>(null);
@@ -306,7 +374,6 @@ export function RouteStepper({
   const [reduceMotion, setReduceMotion] = useState(false);
 
   const shellRef = useRef<HTMLDivElement>(null);
-  const carouselRef = useRef<HTMLDivElement>(null);
   const pillStripRef = useRef<HTMLDivElement>(null);
   const pathRef = useRef<SVGPathElement>(null);
   const busRef = useRef<HTMLDivElement>(null);
@@ -327,17 +394,25 @@ export function RouteStepper({
     onActiveChange,
   );
 
-  const stopDistancesKm = useMemo(() => {
-    if (!activeStop) return line.stops.map(() => null as string | null);
-    return line.stops.map((stop, i) =>
-      i === safeIndex
-        ? null
-        : haversineKm(activeStop.lat, activeStop.lng, stop.lat, stop.lng).toFixed(1),
-    );
-  }, [activeStop, line.stops, safeIndex]);
-
-  const road = useMemo(() => buildDiagonalRoad(total, mapWidth), [total, mapWidth]);
   const isMobileLayout = viewportMobile || mapWidth < MOBILE_LAYOUT_MAX;
+
+  const road = useMemo(
+    () =>
+      isMobileLayout
+        ? { d: "", width: mapWidth, height: 0, cardWidth: 0, edgePad: 0, roadClearance: 0 }
+        : buildDiagonalRoad(total, mapWidth),
+    [total, mapWidth, isMobileLayout],
+  );
+
+  const stopDistancesKm = useMemo(() => {
+    if (isMobileLayout) return line.stops.map(() => null as string | null);
+    if (!activeStop) return line.stops.map(() => null as string | null);
+    return line.stops.map((stop, i) => {
+      if (i === safeIndex || Math.abs(i - safeIndex) > 1) return null;
+      return haversineKm(activeStop.lat, activeStop.lng, stop.lat, stop.lng).toFixed(1);
+    });
+  }, [activeStop, isMobileLayout, line.stops, safeIndex]);
+
   const progressMV = useMotionValue(0);
   const roadStroke = mapWidth < 560 ? 26 : 34;
 
@@ -432,10 +507,12 @@ export function RouteStepper({
   }, [safeIndex, pathLength, progressMV, total, applyPose, isMobileLayout]);
 
   useMotionValueEvent(progressMV, "change", (v) => {
+    if (isMobileLayout) return;
     applyPose(v, pathLengthRef.current);
   });
 
   useEffect(() => {
+    if (isMobileLayout) return;
     const el = cardRefs.current[safeIndex];
     if (!el) return;
     if (skipScroll.current) {
@@ -443,60 +520,21 @@ export function RouteStepper({
       return;
     }
     el.scrollIntoView({
-      behavior: reducedMotion() ? "auto" : "smooth",
-      block: isMobileLayout ? "nearest" : "center",
-      inline: isMobileLayout ? "center" : "nearest",
+      behavior: "auto",
+      block: "center",
+      inline: "nearest",
     });
   }, [safeIndex, isMobileLayout]);
 
   useEffect(() => {
     if (!isMobileLayout) return;
-    const pill = pillStripRef.current?.querySelector<HTMLElement>(
-      `[data-pill-index="${safeIndex}"]`,
-    );
-    pill?.scrollIntoView({
-      behavior: reducedMotion() ? "auto" : "smooth",
-      block: "nearest",
-      inline: "center",
-    });
-  }, [safeIndex, isMobileLayout, reduceMotion]);
-
-  const observerDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-
-  useEffect(() => {
-    if (!isMobileLayout) return;
-    const root = carouselRef.current;
-    if (!root) return;
-
-    const observer = new IntersectionObserver(
-      (entries) => {
-        let best: { index: number; ratio: number } | null = null;
-        for (const entry of entries) {
-          if (!entry.isIntersecting) continue;
-          const idx = Number((entry.target as HTMLElement).dataset["cardIndex"]);
-          if (!Number.isFinite(idx)) continue;
-          if (!best || entry.intersectionRatio > best.ratio) {
-            best = { index: idx, ratio: entry.intersectionRatio };
-          }
-        }
-        if (!best || best.index === activeIndexRef.current) return;
-        if (observerDebounceRef.current) clearTimeout(observerDebounceRef.current);
-        observerDebounceRef.current = setTimeout(() => {
-          skipScroll.current = true;
-          onActiveChange(best!.index);
-        }, 120);
-      },
-      { root, threshold: [0.55, 0.7] },
-    );
-
-    cardRefs.current.forEach((node) => {
-      if (node) observer.observe(node);
-    });
-    return () => {
-      observer.disconnect();
-      if (observerDebounceRef.current) clearTimeout(observerDebounceRef.current);
-    };
-  }, [isMobileLayout, line.stops.length, onActiveChange]);
+    const strip = pillStripRef.current;
+    if (!strip) return;
+    const pill = strip.querySelector<HTMLElement>(`[data-pill-index="${safeIndex}"]`);
+    if (!pill) return;
+    const target = pill.offsetLeft - strip.clientWidth / 2 + pill.offsetWidth / 2;
+    strip.scrollTo({ left: target, behavior: "auto" });
+  }, [safeIndex, isMobileLayout]);
 
   const findNearest = () => {
     if (!("geolocation" in navigator)) {
@@ -542,7 +580,13 @@ export function RouteStepper({
     >
       <div className="relative z-10 w-full min-w-full px-3 sm:px-6 md:px-12">
         <div
-          className="w-full max-w-none overflow-x-hidden overflow-y-visible border-y border-slate-200/40 bg-white/45 py-3 backdrop-blur-xl dark:border-slate-800/40 dark:bg-slate-950/40 sm:py-5"
+          className={cn(
+            "w-full max-w-none overflow-x-hidden overflow-y-visible border-y border-slate-200/40 py-3 sm:py-5",
+            isMobileLayout
+              ? "bg-white/95 dark:bg-slate-950/95"
+              : "bg-white/45 backdrop-blur-xl dark:bg-slate-950/40",
+            "dark:border-slate-800/40",
+          )}
           {...(isMobileLayout ? {} : mapSwipe)}
         >
           <div className="relative z-30 mb-4 flex w-full max-w-none flex-wrap items-center justify-between gap-2 sm:mb-5 sm:gap-3">
@@ -577,7 +621,7 @@ export function RouteStepper({
               <div className="mb-3 px-1">
                 <div className="mb-3 h-1 overflow-hidden rounded-full bg-slate-200/80 dark:bg-slate-800">
                   <div
-                    className="h-full rounded-full bg-gradient-to-l from-emerald-500 to-amber-500 transition-all duration-500"
+                    className="h-full rounded-full bg-gradient-to-l from-emerald-500 to-amber-500 transition-[width] duration-200 ease-out"
                     style={{ width: `${completion}%` }}
                   />
                 </div>
@@ -586,126 +630,64 @@ export function RouteStepper({
                   className="flex items-center gap-2 overflow-x-auto pb-1 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
                 >
                   <div className="flex min-w-full items-center gap-2 px-1">
-                    {line.stops.map((stop, i) => {
-                      const active = i === safeIndex;
-                      const passed = i < safeIndex;
-                      return (
-                        <button
-                          key={`pill-${stop.id}`}
-                          type="button"
-                          data-pill-index={i}
-                          aria-label={pick(stop.name, locale)}
-                          aria-current={active ? "step" : undefined}
-                          onClick={() => goTo(i)}
-                          className={cn(
-                            "inline-flex shrink-0 flex-col items-center gap-1 rounded-2xl border px-2 py-1.5 text-[10px] font-bold transition-all",
-                            active
-                              ? "z-10 min-w-[4.25rem] border-amber-400 bg-[#0B2265] text-amber-100 shadow-lg shadow-amber-500/25"
-                              : passed
-                                ? "border-emerald-400/40 bg-emerald-500/10 text-emerald-700 dark:text-emerald-300"
-                                : "border-slate-200/80 bg-white/90 text-slate-500 dark:border-slate-700 dark:bg-slate-900/80 dark:text-slate-400",
-                          )}
-                        >
-                          <span
-                            className={cn(
-                              "flex size-7 items-center justify-center rounded-full text-[11px] font-black",
-                              active
-                                ? "bg-amber-400 text-slate-950 ring-2 ring-amber-200/50"
-                                : passed
-                                  ? "bg-emerald-500/20 text-emerald-700 dark:text-emerald-300"
-                                  : "bg-slate-100 text-slate-500 dark:bg-slate-800 dark:text-slate-400",
-                            )}
-                          >
-                            {stop.order}
-                          </span>
-                          <span className="max-w-[4.5rem] truncate leading-tight">
-                            {pick(stop.name, locale)}
-                          </span>
-                        </button>
-                      );
-                    })}
+                    {line.stops.map((stop, i) => (
+                      <StopPill
+                        key={stop.id}
+                        stop={stop}
+                        index={i}
+                        activeIndex={safeIndex}
+                        locale={locale}
+                        onSelect={goTo}
+                      />
+                    ))}
                   </div>
                 </div>
               </div>
 
-              {/* بطاقات — تمرير أفقي */}
-              <div className="relative touch-pan-x">
-                <div className="pointer-events-none absolute inset-y-0 start-0 z-10 w-4 bg-gradient-to-r from-white/95 to-transparent sm:w-6 dark:from-slate-950/95" />
-                <div className="pointer-events-none absolute inset-y-0 end-0 z-10 w-4 bg-gradient-to-l from-white/95 to-transparent sm:w-6 dark:from-slate-950/95" />
-
-                <div className="absolute inset-y-0 start-0 z-20 flex items-center ps-0.5">
+              {/* بطاقة واحدة — أخف على الجوال */}
+              <div className="relative px-0.5" {...mapSwipe}>
+                <div className="mb-2 flex items-center justify-between gap-2">
                   <button
                     type="button"
                     onClick={goPrev}
                     disabled={safeIndex === 0}
                     aria-label={t.prevStop}
-                    className="inline-flex size-7 items-center justify-center rounded-full border border-slate-200/80 bg-white/95 text-slate-700 shadow-md disabled:opacity-30 sm:size-8 dark:border-slate-700 dark:bg-slate-900/95 dark:text-slate-200"
+                    className="inline-flex size-9 items-center justify-center rounded-xl border border-slate-200/80 bg-white/95 text-slate-700 shadow-sm disabled:opacity-30 dark:border-slate-700 dark:bg-slate-900/95 dark:text-slate-200"
                   >
-                    <PrevIcon className="size-3.5 sm:size-4" />
+                    <PrevIcon className="size-4" />
                   </button>
-                </div>
-                <div className="absolute inset-y-0 end-0 z-20 flex items-center pe-0.5">
+                  <p className="min-w-0 flex-1 truncate text-center text-[11px] font-extrabold text-slate-600 dark:text-slate-300">
+                    {t.stopProgress(safeIndex + 1, total, pick(activeStop.name, locale))}
+                  </p>
                   <button
                     type="button"
                     onClick={goNext}
                     disabled={safeIndex === total - 1}
                     aria-label={t.nextStop}
-                    className="inline-flex size-7 items-center justify-center rounded-full border border-slate-200/80 bg-white/95 text-slate-700 shadow-md disabled:opacity-30 sm:size-8 dark:border-slate-700 dark:bg-slate-900/95 dark:text-slate-200"
+                    className="inline-flex size-9 items-center justify-center rounded-xl border border-slate-200/80 bg-white/95 text-slate-700 shadow-sm disabled:opacity-30 dark:border-slate-700 dark:bg-slate-900/95 dark:text-slate-200"
                   >
-                    <NextIcon className="size-3.5 sm:size-4" />
+                    <NextIcon className="size-4" />
                   </button>
                 </div>
 
-                <div
-                  ref={carouselRef}
-                  className="flex snap-x snap-mandatory gap-3 overflow-x-auto overscroll-x-contain scroll-smooth scroll-px-[2.25rem] px-9 pb-1 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
-                  dir="ltr"
-                >
-                  {line.stops.map((stop, i) => {
-                    const status = getStopStatus(i, safeIndex);
-                    const distKm = stopDistancesKm[i] ?? null;
-                    const active = i === safeIndex;
-                    return (
-                      <div
-                        key={`mobile-${stop.id}`}
-                        data-card-index={i}
-                        ref={(node) => {
-                          cardRefs.current[i] = node;
-                        }}
-                        className={cn(
-                          "w-[min(calc(100vw-4.5rem),18.5rem)] shrink-0 snap-center sm:w-[min(calc(100vw-5.5rem),20.5rem)]",
-                          active ? "opacity-100" : "opacity-90",
-                        )}
-                        dir={dir}
-                      >
-                        <MemoStopCard
-                          stop={stop}
-                          status={status}
-                          distanceKm={distKm}
-                          side={cardSide(i)}
-                          index={i}
-                          compact
-                          listLayout
-                          reduceMotion={reduceMotion}
-                          showOfficeHours={settings.showOfficeHours}
-                          onActivate={() => goTo(i)}
-                          onOpenDetails={() => {
-                            goTo(i);
-                            onOpenStop(stop);
-                          }}
-                          onGoToMaps={() => {
-                            goTo(i);
-                            openStopInMaps(stop);
-                          }}
-                        />
-                      </div>
-                    );
-                  })}
-                </div>
+                <MemoStopCard
+                  stop={activeStop}
+                  status="active"
+                  distanceKm={null}
+                  side={cardSide(safeIndex)}
+                  index={safeIndex}
+                  compact
+                  listLayout
+                  reduceMotion
+                  showOfficeHours={showOfficeHours}
+                  onActivate={() => goTo(safeIndex)}
+                  onOpenDetails={() => onOpenStop(activeStop)}
+                  onGoToMaps={() => openStopInMaps(activeStop)}
+                />
               </div>
 
               <p className="mt-2 text-center text-[10px] font-medium text-slate-400 dark:text-slate-500">
-                {dir === "rtl" ? "← اسحب لعرض المحطات →" : "→ Swipe to browse stops ←"}
+                {dir === "rtl" ? "← اسحب يمين/يسار للمحطة التالية →" : "→ Swipe for next stop ←"}
               </p>
             </div>
           ) : (
@@ -930,18 +912,30 @@ export function RouteStepper({
       >
         <div
           {...dockSwipe}
-          className="pointer-events-auto mx-auto flex w-full max-w-none flex-col gap-2.5 rounded-2xl border border-white/50 bg-white/80 p-3 shadow-2xl shadow-slate-900/10 backdrop-blur-xl dark:border-slate-700/60 dark:bg-slate-900/80"
+          className={cn(
+            "pointer-events-auto mx-auto flex w-full max-w-none flex-col gap-2.5 rounded-2xl border p-3 shadow-2xl shadow-slate-900/10",
+            isMobileLayout
+              ? "border-slate-200/80 bg-white dark:border-slate-700/60 dark:bg-slate-900"
+              : "border-white/50 bg-white/80 backdrop-blur-xl dark:border-slate-700/60 dark:bg-slate-900/80",
+          )}
         >
           <div className="flex items-center gap-2 px-1">
             <span className="text-[10px] font-bold tracking-wide text-slate-500 dark:text-slate-400">
               {t.tripProgress}
             </span>
             <div className="h-1.5 flex-1 overflow-hidden rounded-full bg-slate-200/90 dark:bg-slate-800">
-              <motion.div
-                className="h-full rounded-full bg-gradient-to-r from-amber-500 to-yellow-400"
-                animate={{ width: `${completion}%` }}
-                transition={reduceMotion ? { duration: 0.2 } : SPRING}
-              />
+              {isMobileLayout ? (
+                <div
+                  className="h-full rounded-full bg-gradient-to-r from-amber-500 to-yellow-400 transition-[width] duration-300 ease-out"
+                  style={{ width: `${completion}%` }}
+                />
+              ) : (
+                <motion.div
+                  className="h-full rounded-full bg-gradient-to-r from-amber-500 to-yellow-400"
+                  animate={{ width: `${completion}%` }}
+                  transition={reduceMotion ? { duration: 0.2 } : SPRING}
+                />
+              )}
             </div>
             <span className="text-[10px] font-extrabold text-amber-600 dark:text-amber-400">
               {t.routePercent(completion)}
@@ -1024,50 +1018,26 @@ function StopCard({
 }) {
   const { locale, dir, t } = useI18n();
   const active = status === "active";
-  const fromX = listLayout ? 0 : side === "left" ? -28 : 28;
+  const fromX = side === "left" ? -28 : 28;
 
-  return (
-    <motion.div
-      role="button"
-      tabIndex={0}
-      onClick={onActivate}
-      onKeyDown={(e) => {
-        if (e.key === "Enter" || e.key === " ") {
-          e.preventDefault();
-          onActivate();
-        }
-      }}
-      initial={reduceMotion || listLayout ? false : { opacity: 0, x: fromX, scale: 0.94 }}
-      animate={{
-        opacity: active ? 1 : listLayout ? 0.95 : 0.9,
-        x: 0,
-        scale: listLayout ? 1 : active ? 1.02 : 1,
-        y: 0,
-      }}
-      {...(listLayout || reduceMotion
-        ? {}
-        : { whileHover: { opacity: 1, scale: active ? 1.05 : 1.02 } })}
-      transition={{
-        opacity: {
-          duration: listLayout ? 0.2 : 0.35,
-          delay: listLayout ? 0 : Math.min(index * 0.05, 0.45),
-        },
-        x: listLayout
-          ? { duration: 0.2 }
-          : { type: "spring", stiffness: 260, damping: 22, delay: Math.min(index * 0.05, 0.45) },
-        scale: listLayout ? { duration: 0.2 } : SPRING,
-        y: { duration: 0.3 },
-      }}
-      className={cn(
-        "group relative w-full cursor-pointer overflow-hidden rounded-2xl border backdrop-blur-xl",
-        listLayout ? "p-3" : compact ? "p-2" : "p-3 sm:p-3.5",
-        active
-          ? "z-10 border-amber-400/80 bg-white/95 shadow-xl shadow-amber-500/25 ring-2 ring-amber-500 dark:bg-slate-900/95"
-          : "border-slate-200/60 bg-white/80 hover:border-slate-300 dark:border-slate-800/50 dark:bg-slate-900/50 dark:hover:border-slate-700",
-        !listLayout && (side === "right" ? "origin-left" : "origin-right"),
-      )}
-    >
-      {active && (
+  const cardClass = cn(
+    "group relative w-full cursor-pointer overflow-hidden rounded-2xl border",
+    listLayout
+      ? "p-3 bg-white/95 dark:bg-slate-900/95"
+      : compact
+        ? "p-2 backdrop-blur-xl"
+        : "p-3 backdrop-blur-xl sm:p-3.5",
+    active
+      ? "z-10 border-amber-400/80 shadow-xl shadow-amber-500/25 ring-2 ring-amber-500"
+      : listLayout
+        ? "border-slate-200/60 dark:border-slate-800/50"
+        : "border-slate-200/60 bg-white/80 hover:border-slate-300 dark:border-slate-800/50 dark:bg-slate-900/50 dark:hover:border-slate-700",
+    !listLayout && (side === "right" ? "origin-left" : "origin-right"),
+  );
+
+  const cardBody = (
+    <>
+      {active && !listLayout ? (
         <>
           <motion.span
             className="pointer-events-none absolute -end-8 -top-8 size-28 rounded-full bg-amber-400/20 blur-2xl"
@@ -1082,7 +1052,7 @@ function StopCard({
             aria-hidden
           />
         </>
-      )}
+      ) : null}
 
       {listLayout ? (
         <div className="flex items-start gap-3" dir={dir}>
@@ -1183,10 +1153,14 @@ function StopCard({
 
           {active && (
             <span className="inline-flex items-center gap-1 rounded-full bg-amber-500/15 px-1.5 py-0.5 text-[10px] font-semibold text-amber-700 sm:px-2 sm:text-xs dark:text-amber-300">
-              <span className="relative flex size-1.5">
-                <span className="absolute inline-flex size-full animate-ping rounded-full bg-amber-400 opacity-70" />
-                <span className="relative inline-flex size-1.5 rounded-full bg-amber-500" />
-              </span>
+              {listLayout ? (
+                <span className="inline-flex size-1.5 rounded-full bg-amber-500" />
+              ) : (
+                <span className="relative flex size-1.5">
+                  <span className="absolute inline-flex size-full animate-ping rounded-full bg-amber-400 opacity-70" />
+                  <span className="relative inline-flex size-1.5 rounded-full bg-amber-500" />
+                </span>
+              )}
               {t.activeStopTag}
             </span>
           )}
@@ -1204,6 +1178,49 @@ function StopCard({
         <ExternalLink className="size-3.5 shrink-0" />
         <span>{t.previewLocation}</span>
       </button>
+    </>
+  );
+
+  const cardHandlers = {
+    role: "button" as const,
+    tabIndex: 0,
+    onClick: onActivate,
+    onKeyDown: (e: ReactKeyboardEvent) => {
+      if (e.key === "Enter" || e.key === " ") {
+        e.preventDefault();
+        onActivate();
+      }
+    },
+  };
+
+  if (listLayout || !active || reduceMotion) {
+    return (
+      <div {...cardHandlers} className={cardClass}>
+        {cardBody}
+      </div>
+    );
+  }
+
+  return (
+    <motion.div
+      {...cardHandlers}
+      initial={reduceMotion ? false : { opacity: 0, x: fromX, scale: 0.94 }}
+      animate={{
+        opacity: active ? 1 : 0.9,
+        x: 0,
+        scale: active ? 1.02 : 1,
+        y: 0,
+      }}
+      {...(reduceMotion ? {} : { whileHover: { opacity: 1, scale: active ? 1.05 : 1.02 } })}
+      transition={{
+        opacity: { duration: 0.35, delay: Math.min(index * 0.05, 0.45) },
+        x: { type: "spring", stiffness: 260, damping: 22, delay: Math.min(index * 0.05, 0.45) },
+        scale: SPRING,
+        y: { duration: 0.3 },
+      }}
+      className={cardClass}
+    >
+      {cardBody}
     </motion.div>
   );
 }
@@ -1215,6 +1232,7 @@ type SafeRouteStepperProps = {
   activeIndex: number;
   onActiveChange: (i: number) => void;
   onOpenStop: (stop: Stop) => void;
+  showOfficeHours?: boolean;
 };
 
 class StepperErrorBoundary extends Component<{ children: ReactNode }, { hasError: boolean }> {
@@ -1249,7 +1267,7 @@ export function SafeRouteStepper(props: SafeRouteStepperProps) {
   }, []);
 
   if (!ready) {
-    return <div className="min-h-[10rem] w-full sm:min-h-[16rem]" aria-hidden />;
+    return <div className="min-h-[6rem] w-full sm:min-h-[16rem]" aria-hidden />;
   }
 
   return (

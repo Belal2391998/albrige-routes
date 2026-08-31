@@ -184,13 +184,22 @@ function AdminPage() {
       defaultTime: row.departureTime,
       status: row.trafficStatus,
       notes: row.adminNote,
-    });
-    toast.success(t.adminSavedStop);
+    }).then((mode) => toastSaveMode(mode, "stop"));
   };
 
-  const saveAll = () => {
+  const toastSaveMode = (mode: "supabase" | "local", kind: "stop" | "line" = "line") => {
+    if (mode === "supabase") {
+      toast.success(t.adminSavedCloud);
+    } else if (supabaseEnabled) {
+      toast.message(t.adminSavedLocalOnly);
+    } else {
+      toast.success(kind === "stop" ? t.adminSavedStop : t.adminSavedLine);
+    }
+  };
+
+  const saveAll = async () => {
     if (!activeRoute) return;
-    saveLineBulk(
+    const mode = await saveLineBulk(
       activeRoute.stations.map((s) => ({
         stopId: s.id,
         ...(draft[s.id]
@@ -206,7 +215,7 @@ function AdminPage() {
             }),
       })),
     );
-    toast.success(t.adminSavedLine);
+    toastSaveMode(mode, "line");
   };
 
   const bumpTime = (stopId: string, delta: number) => {

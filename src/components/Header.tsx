@@ -12,7 +12,7 @@ import { cn } from "@/lib/utils";
 const DARK_KEY = "albreeji-dark";
 
 export function Header() {
-  const { locale, dir, t, setLocale } = useI18n();
+  const { locale, t, setLocale } = useI18n();
   const { activeLiveLines } = useSchedule();
   const routeLines = activeLiveLines;
   const [openLines, setOpenLines] = useState(false);
@@ -287,16 +287,14 @@ export function Header() {
               {t.adminFooterLink}
             </Link>
 
-            <motion.button
+            <button
               type="button"
-              whileHover={{ scale: 1.03 }}
-              whileTap={{ scale: 0.97 }}
-              onClick={() => setOpenLines(true)}
-              className="flex size-10 items-center justify-center rounded-full border border-slate-200/70 bg-slate-100/80 text-slate-800 shadow-sm md:hidden dark:border-slate-800 dark:bg-slate-900/80 dark:text-slate-100"
               aria-label={t.linesShort}
+              onClick={() => setOpenLines(true)}
+              className="flex size-10 items-center justify-center rounded-full border border-slate-200/70 bg-slate-100/80 text-slate-800 shadow-sm active:scale-95 md:hidden dark:border-slate-800 dark:bg-slate-900/80 dark:text-slate-100"
             >
               <Bus className="size-4 text-amber-500" />
-            </motion.button>
+            </button>
           </div>
         </div>
       </motion.header>
@@ -304,56 +302,50 @@ export function Header() {
       {/* Offset for fixed header */}
       <div className={cn("shrink-0 transition-all duration-300", headerH)} aria-hidden />
 
-      {/* Mobile lines drawer */}
-      <AnimatePresence>
-        {openLines && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="fixed inset-0 z-[60] bg-slate-950/50 backdrop-blur-sm md:hidden"
-            onClick={() => setOpenLines(false)}
+      {/* Mobile lines drawer — fast open, no heavy blur */}
+      {openLines ? (
+        <div
+          className="fixed inset-0 z-[60] bg-slate-950/75 md:hidden"
+          onClick={() => setOpenLines(false)}
+        >
+          <aside
+            onClick={(e) => e.stopPropagation()}
+            className={cn(
+              "absolute inset-y-0 start-0 w-[88%] max-w-sm border-e border-white/10 bg-slate-950 p-4 shadow-2xl",
+              "animate-in slide-in-from-start duration-200 ease-out fill-mode-both",
+            )}
           >
-            <motion.aside
-              initial={{ x: dir === "rtl" ? "100%" : "-100%" }}
-              animate={{ x: 0 }}
-              exit={{ x: dir === "rtl" ? "100%" : "-100%" }}
-              transition={{ type: "spring", stiffness: 260, damping: 28 }}
-              onClick={(e) => e.stopPropagation()}
-              className="absolute inset-y-0 start-0 w-[88%] max-w-sm border-e border-white/10 bg-slate-950/95 p-4 shadow-2xl backdrop-blur-xl"
-            >
-              <div className="mb-4 flex items-center justify-between gap-3">
-                <div className="min-w-0">
-                  <p className="text-xs font-bold text-amber-400">{t.linesSectionBadge}</p>
-                  <h2 className="text-lg font-extrabold text-white">{t.linesNav}</h2>
-                </div>
-                <button
-                  type="button"
-                  onClick={() => setOpenLines(false)}
-                  aria-label={t.close}
-                  className="flex size-9 shrink-0 items-center justify-center rounded-xl bg-white/10 text-slate-200"
-                >
-                  <X className="size-5" />
-                </button>
+            <div className="mb-4 flex items-center justify-between gap-3">
+              <div className="min-w-0">
+                <p className="text-xs font-bold text-amber-400">{t.linesSectionBadge}</p>
+                <h2 className="text-lg font-extrabold text-white">{t.linesNav}</h2>
               </div>
+              <button
+                type="button"
+                onClick={() => setOpenLines(false)}
+                aria-label={t.close}
+                className="flex size-9 shrink-0 items-center justify-center rounded-xl bg-white/10 text-slate-200 active:bg-white/20"
+              >
+                <X className="size-5" />
+              </button>
+            </div>
 
-              <div className="mb-4 flex items-center gap-3 rounded-2xl border border-white/10 bg-white/5 p-3">
-                <img src={brandLogo} alt="" className="h-8 w-auto object-contain" />
-                <span className="h-7 w-px bg-white/15" aria-hidden />
-                <img src={gjuLogo} alt="" className="h-8 w-auto object-contain" />
-              </div>
+            <div className="mb-4 flex items-center gap-3 rounded-2xl border border-white/10 bg-white/5 p-3">
+              <img src={brandLogo} alt="" className="h-8 w-auto object-contain" />
+              <span className="h-7 w-px bg-white/15" aria-hidden />
+              <img src={gjuLogo} alt="" className="h-8 w-auto object-contain" />
+            </div>
 
-              <RoutesMapMenu
-                compact
-                hideHeader
-                lines={routeLines}
-                onSelect={() => setOpenLines(false)}
-                className="border-0 bg-transparent p-0 shadow-none backdrop-blur-none"
-              />
-            </motion.aside>
-          </motion.div>
-        )}
-      </AnimatePresence>
+            <RoutesMapMenu
+              compact
+              hideHeader
+              lines={routeLines}
+              onSelect={() => setOpenLines(false)}
+              className="border-0 bg-transparent p-0 shadow-none"
+            />
+          </aside>
+        </div>
+      ) : null}
 
       {/* Search overlay */}
       <AnimatePresence>

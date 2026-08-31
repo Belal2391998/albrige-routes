@@ -32,7 +32,7 @@ function StopPickupScheduleCore({
   className,
 }: StopPickupScheduleCoreProps) {
   const { t } = useI18n();
-  const slots = getPickupSlots(lineId, stopOrder);
+  const slots = getPickupSlots(lineId, stopOrder, departureTime);
 
   if (!showOfficeHours) return null;
 

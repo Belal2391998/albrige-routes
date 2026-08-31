@@ -3,6 +3,7 @@ import { lines, type Line } from "@/data/transportData";
 import type { Localized } from "@/lib/i18n";
 import type { ManagedRoute, ManagedStation, NetworkSnapshot } from "@/lib/networkTypes";
 import { DEFAULT_APP_SETTINGS } from "@/lib/networkTypes";
+import { routeStableId, stationStableId } from "@/lib/stableUuid";
 
 function mapsUrl(lat: number, lng: number) {
   return `https://www.google.com/maps?q=${lat},${lng}`;
@@ -18,9 +19,9 @@ function toLocalized(source: Localized): Localized {
 
 export function seedNetworkFromStaticLines(): NetworkSnapshot {
   const routes: ManagedRoute[] = lines.map((line, index) => {
-    const routeId = `route-${line.slug}`;
+    const routeId = routeStableId(line.slug);
     const stations: ManagedStation[] = line.stops.map((stop) => ({
-      id: `station-${line.slug}-${stop.order}`,
+      id: stationStableId(line.slug, stop.order),
       routeId,
       stationIndex: stop.order,
       name: toLocalized(stop.name),

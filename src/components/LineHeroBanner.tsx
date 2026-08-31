@@ -1,4 +1,4 @@
-import { useMemo } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Link } from "@tanstack/react-router";
 import { motion } from "motion/react";
 import { ArrowLeft, ArrowRight, Bus, CheckCircle2, Clock3, MapPin } from "lucide-react";
@@ -159,12 +159,31 @@ function FloatingParticles() {
   );
 }
 
+const MOBILE_LITE_MAX = 767;
+
+function useMobileLite() {
+  const [mobile, setMobile] = useState(() =>
+    typeof window !== "undefined"
+      ? window.matchMedia(`(max-width: ${MOBILE_LITE_MAX}px)`).matches
+      : false,
+  );
+  useEffect(() => {
+    const mq = window.matchMedia(`(max-width: ${MOBILE_LITE_MAX}px)`);
+    const apply = () => setMobile(mq.matches);
+    apply();
+    mq.addEventListener("change", apply);
+    return () => mq.removeEventListener("change", apply);
+  }, []);
+  return mobile;
+}
+
 const metaPillClass =
   "flex items-center gap-2 rounded-xl border border-white/10 bg-white/5 px-4 py-2 text-xs font-medium text-slate-200 backdrop-blur-md transition-all hover:border-amber-400/40 sm:text-sm";
 
 export function LineHeroBanner({ line }: { line: Line }) {
   const { locale, dir, t } = useI18n();
   const { settings } = useSchedule();
+  const mobileLite = useMobileLite();
   const BackIcon = dir === "rtl" ? ArrowRight : ArrowLeft;
   const mins = estimateTripMinutes(line);
   const durationLabel = t.tripDurationApprox(`~${mins}`);
@@ -189,10 +208,14 @@ export function LineHeroBanner({ line }: { line: Line }) {
         : "text-emerald-400";
 
   return (
-    <section className="relative w-full overflow-hidden bg-gradient-to-b from-[#081226] via-[#0B1E3D] to-[#060D1A] px-4 py-16 text-center sm:py-20">
-      {/* Ambient layers — strictly behind content */}
-      <TransitRouteGrid />
-      <FloatingParticles />
+    <section className="relative w-full overflow-hidden bg-gradient-to-b from-[#081226] via-[#0B1E3D] to-[#060D1A] px-4 py-6 text-center sm:py-20">
+      {/* Ambient layers — desktop only (heavy SVG / particles) */}
+      {!mobileLite ? (
+        <>
+          <TransitRouteGrid />
+          <FloatingParticles />
+        </>
+      ) : null}
 
       <div
         className="pointer-events-none absolute start-1/2 top-[46%] h-[320px] w-[min(560px,92vw)] -translate-x-1/2 -translate-y-1/2 rounded-full"
@@ -230,9 +253,9 @@ export function LineHeroBanner({ line }: { line: Line }) {
       <div className="relative z-10 mx-auto flex max-w-4xl flex-col items-center">
         {/* Back navigation */}
         <motion.div
-          initial={{ opacity: 0, y: -20 }}
+          initial={mobileLite ? false : { opacity: 0, y: -20 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
+          transition={mobileLite ? { duration: 0 } : { duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
         >
           <Link
             to="/"
@@ -250,60 +273,87 @@ export function LineHeroBanner({ line }: { line: Line }) {
 
         {/* Line badge */}
         <motion.div
-          initial={{ opacity: 0, scale: 0.8 }}
+          initial={mobileLite ? false : { opacity: 0, scale: 0.8 }}
           animate={{ opacity: 1, scale: 1 }}
-          transition={{ type: "spring", stiffness: 320, damping: 18, delay: 0.15 }}
-          className="animate-hero-badge-pulse mb-4 inline-flex items-center gap-2 rounded-full bg-gradient-to-r from-amber-500 to-yellow-500 px-4 py-1.5 text-xs font-black tracking-wide text-slate-950 sm:text-sm"
+          transition={
+            mobileLite
+              ? { duration: 0 }
+              : { type: "spring", stiffness: 320, damping: 18, delay: 0.15 }
+          }
+          className={cn(
+            "mb-4 inline-flex items-center gap-2 rounded-full bg-gradient-to-r from-amber-500 to-yellow-500 px-4 py-1.5 text-xs font-black tracking-wide text-slate-950 sm:text-sm",
+            !mobileLite && "animate-hero-badge-pulse",
+          )}
         >
-          <motion.span
-            animate={{ y: [0, -2.5, 0] }}
-            transition={{ duration: 2.2, repeat: Infinity, ease: "easeInOut" }}
-            className="flex"
-          >
+          {mobileLite ? (
             <Bus className="size-4" />
-          </motion.span>
-          <motion.span
-            animate={{ opacity: [1, 0.84, 1] }}
-            transition={{ duration: 2.8, repeat: Infinity, ease: "easeInOut" }}
-          >
-            {pick(line.badge, locale)}
-          </motion.span>
+          ) : (
+            <motion.span
+              animate={{ y: [0, -2.5, 0] }}
+              transition={{ duration: 2.2, repeat: Infinity, ease: "easeInOut" }}
+              className="flex"
+            >
+              <Bus className="size-4" />
+            </motion.span>
+          )}
+          {mobileLite ? (
+            <span>{pick(line.badge, locale)}</span>
+          ) : (
+            <motion.span
+              animate={{ opacity: [1, 0.84, 1] }}
+              transition={{ duration: 2.8, repeat: Infinity, ease: "easeInOut" }}
+            >
+              {pick(line.badge, locale)}
+            </motion.span>
+          )}
         </motion.div>
 
-        {/* Monumental title */}
         <motion.h1
-          initial={{ opacity: 0, y: 30 }}
+          initial={mobileLite ? false : { opacity: 0, y: 30 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.55, delay: 0.25, ease: [0.22, 1, 0.36, 1] }}
-          className="text-4xl font-black tracking-tight text-white drop-shadow-md sm:text-6xl lg:text-7xl"
-          style={{ textShadow: "0 0 40px rgba(245, 158, 11, 0.22)" }}
+          transition={
+            mobileLite ? { duration: 0 } : { duration: 0.55, delay: 0.25, ease: [0.22, 1, 0.36, 1] }
+          }
+          className={cn(
+            "text-3xl font-black tracking-tight text-white drop-shadow-md sm:text-6xl lg:text-7xl",
+            !mobileLite && "[text-shadow:0_0_40px_rgba(245,158,11,0.22)]",
+          )}
         >
           {pick(line.title, locale)}
         </motion.h1>
-        <motion.span
-          initial={{ scaleX: 0, opacity: 0 }}
-          animate={{ scaleX: 1, opacity: 1 }}
-          transition={{ duration: 0.55, delay: 0.4 }}
-          className="mt-3 h-1 w-24 origin-center rounded-full bg-gradient-to-r from-transparent via-amber-400 to-transparent shadow-[0_0_16px_rgba(245,158,11,0.55)]"
-          aria-hidden
-        />
+        {!mobileLite ? (
+          <motion.span
+            initial={{ scaleX: 0, opacity: 0 }}
+            animate={{ scaleX: 1, opacity: 1 }}
+            transition={{ duration: 0.55, delay: 0.4 }}
+            className="mt-3 h-1 w-24 origin-center rounded-full bg-gradient-to-r from-transparent via-amber-400 to-transparent shadow-[0_0_16px_rgba(245,158,11,0.55)]"
+            aria-hidden
+          />
+        ) : (
+          <span
+            className="mt-3 inline-block h-1 w-20 rounded-full bg-gradient-to-r from-transparent via-amber-400 to-transparent"
+            aria-hidden
+          />
+        )}
 
-        {/* Subtitle */}
         <motion.p
-          initial={{ opacity: 0, y: 30 }}
+          initial={mobileLite ? false : { opacity: 0, y: 30 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5, delay: 0.32, ease: [0.22, 1, 0.36, 1] }}
+          transition={
+            mobileLite ? { duration: 0 } : { duration: 0.5, delay: 0.32, ease: [0.22, 1, 0.36, 1] }
+          }
           className="mt-3 max-w-2xl text-sm font-medium text-slate-200/80 sm:text-lg"
         >
           {pick(line.subtitle, locale)}
         </motion.p>
 
-        {/* Meta capsule dock */}
         <motion.div
-          initial={{ opacity: 0, y: 20 }}
+          initial={mobileLite ? false : { opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5, delay: 0.4, ease: [0.22, 1, 0.36, 1] }}
-          className="mt-8 flex flex-wrap items-center justify-center gap-3"
+          transition={
+            mobileLite ? { duration: 0 } : { duration: 0.5, delay: 0.4, ease: [0.22, 1, 0.36, 1] }
+          }
+          className="mt-6 flex flex-wrap items-center justify-center gap-2 sm:mt-8 sm:gap-3"
         >
           <div className={metaPillClass}>
             <MapPin className="size-4 shrink-0 text-amber-400" />
@@ -315,22 +365,36 @@ export function LineHeroBanner({ line }: { line: Line }) {
               <span>{durationLabel}</span>
             </div>
           ) : null}
-          <motion.div
-            animate={{ opacity: [1, 0.88, 1] }}
-            transition={{ duration: 3.4, repeat: Infinity, ease: "easeInOut" }}
-            className={cn("animate-hero-traffic-pulse", metaPillClass, trafficTone)}
-          >
-            <CheckCircle2 className={cn("size-4 shrink-0", trafficIconTone)} />
-            <span>{trafficLabel}</span>
-          </motion.div>
+          {mobileLite ? (
+            <div className={cn(metaPillClass, trafficTone)}>
+              <CheckCircle2 className={cn("size-4 shrink-0", trafficIconTone)} />
+              <span>{trafficLabel}</span>
+            </div>
+          ) : (
+            <motion.div
+              animate={{ opacity: [1, 0.88, 1] }}
+              transition={{ duration: 3.4, repeat: Infinity, ease: "easeInOut" }}
+              className={cn("animate-hero-traffic-pulse", metaPillClass, trafficTone)}
+            >
+              <CheckCircle2 className={cn("size-4 shrink-0", trafficIconTone)} />
+              <span>{trafficLabel}</span>
+            </motion.div>
+          )}
         </motion.div>
 
         {settings.showOfficeHours && line.returnDepartures && line.returnDepartures.length > 0 ? (
           <motion.div
-            initial={{ opacity: 0, y: 16 }}
+            initial={mobileLite ? false : { opacity: 0, y: 16 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5, delay: 0.48, ease: [0.22, 1, 0.36, 1] }}
-            className="mt-5 w-full max-w-xl rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-center backdrop-blur-md"
+            transition={
+              mobileLite
+                ? { duration: 0 }
+                : { duration: 0.5, delay: 0.48, ease: [0.22, 1, 0.36, 1] }
+            }
+            className={cn(
+              "mt-4 w-full max-w-xl rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-center sm:mt-5",
+              !mobileLite && "backdrop-blur-md",
+            )}
           >
             <p className="mb-2 text-xs font-extrabold tracking-wide text-amber-300/95 sm:text-sm">
               {t.returnDeparturesTitle}

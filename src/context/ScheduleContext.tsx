@@ -57,8 +57,8 @@ type ScheduleContextValue = {
   updateStopTime: (stopId: string, departureTime: string) => void;
   updateStopStatus: (stopId: string, trafficStatus: TrafficStatus) => void;
   updateStopNote: (stopId: string, adminNote: string) => void;
-  saveLineBulk: (stopPatches: Array<{ stopId: string } & StopScheduleOverride>) => void;
-  saveStation: (station: ManagedStation) => Promise<void>;
+  saveLineBulk: (stopPatches: Array<{ stopId: string } & StopScheduleOverride>) => Promise<"supabase" | "local">;
+  saveStation: (station: ManagedStation) => Promise<"supabase" | "local">;
   addStation: (routeId: string, station?: Partial<ManagedStation>) => Promise<ManagedStation>;
   deleteStation: (stationId: string) => Promise<void>;
   // Route management
@@ -151,11 +151,33 @@ export function ScheduleProvider({ children }: { children: ReactNode }) {
     };
   }, []);
 
-  const commit = useCallback(async (next: NetworkSnapshot) => {
+  useEffect(() => {
+    const refreshFromCloud = () => {
+      if (document.visibilityState !== "visible") return;
+      void loadNetwork().then(({ snapshot: loaded, source }) => {
+        if (loaded.updatedAt !== snapshotRef.current.updatedAt) {
+          snapshotRef.current = loaded;
+          setSnapshot(loaded);
+          setStorageMode(source);
+        }
+      });
+    };
+    document.addEventListener("visibilitychange", refreshFromCloud);
+    return () => document.removeEventListener("visibilitychange", refreshFromCloud);
+  }, []);
+
+  const commit = useCallback(async (next: NetworkSnapshot): Promise<"supabase" | "local"> => {
     snapshotRef.current = next;
     setSnapshot(next);
-    const mode = await persistNetwork(next);
-    setStorageMode(mode);
+    try {
+      const mode = await persistNetwork(next);
+      setStorageMode(mode);
+      return mode;
+    } catch (err) {
+      console.error("[ScheduleContext] cloud persist failed", err);
+      setStorageMode("local");
+      return "local";
+    }
   }, []);
 
   const allRoutes = useMemo(
@@ -208,7 +230,7 @@ export function ScheduleProvider({ children }: { children: ReactNode }) {
   );
 
   const saveLineBulk = useCallback(
-    (stopPatches: Array<{ stopId: string } & StopScheduleOverride>) => {
+    async (stopPatches: Array<{ stopId: string } & StopScheduleOverride>) => {
       let next = snapshotRef.current;
       for (const p of stopPatches) {
         const mapped: Partial<ManagedStation> = {};
@@ -217,7 +239,7 @@ export function ScheduleProvider({ children }: { children: ReactNode }) {
         if (p.adminNote != null) mapped.notes = p.adminNote;
         next = patchStationInSnapshot(next, p.stopId, mapped);
       }
-      void commit(next);
+      return commit(next);
     },
     [commit],
   );
@@ -239,7 +261,7 @@ export function ScheduleProvider({ children }: { children: ReactNode }) {
               },
         ),
       };
-      await commit(next);
+      return commit(next);
     },
     [commit],
   );

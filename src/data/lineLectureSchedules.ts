@@ -10,7 +10,41 @@ const LECTURE_LABELS_3 = ["8:30", "10:00", "11:30"] as const;
 const LECTURE_LABELS_2 = ["8:30", "10:00"] as const;
 const LECTURE_LABELS_1 = ["8:30"] as const;
 
-export function getPickupSlots(lineId: number, stopOrder: number): PickupSlot[] | null {
+/** Parse "6:50", "06:50 AM", etc. → minutes since midnight */
+export function parseTimeToMinutes(time: string): number | null {
+  const trimmed = time.trim();
+  const ampm = trimmed.match(/^(\d{1,2}):(\d{2})\s*(AM|PM)$/i);
+  if (ampm) {
+    let hours = Number(ampm[1]);
+    const minutes = Number(ampm[2]);
+    const ap = ampm[3]!.toUpperCase();
+    if (ap === "PM" && hours < 12) hours += 12;
+    if (ap === "AM" && hours === 12) hours = 0;
+    return hours * 60 + minutes;
+  }
+  const h24 = trimmed.match(/^(\d{1,2}):(\d{2})$/);
+  if (h24) {
+    return Number(h24[1]) * 60 + Number(h24[2]);
+  }
+  return null;
+}
+
+function minutesToTime24(totalMinutes: number): string {
+  const total = ((totalMinutes % (24 * 60)) + 24 * 60) % (24 * 60);
+  const h = Math.floor(total / 60);
+  const m = total % 60;
+  return `${h}:${String(m).padStart(2, "0")}`;
+}
+
+/**
+ * Pickup slots for a stop. When `liveDepartureTime` is set (from admin / live network),
+ * all lecture slots shift by the same delta as the first slot — so +/-5 in admin updates the public table.
+ */
+export function getPickupSlots(
+  lineId: number,
+  stopOrder: number,
+  liveDepartureTime?: string,
+): PickupSlot[] | null {
   const times = lectureSchedulesByLineId[lineId]?.[stopOrder - 1];
   if (!times) return null;
   const labels =
@@ -19,10 +53,27 @@ export function getPickupSlots(lineId: number, stopOrder: number): PickupSlot[] 
       : times.length === 2
         ? LECTURE_LABELS_2
         : LECTURE_LABELS_1;
-  return times.map((t, i) => ({
-    lectureLabel: labels[i] ?? `${i + 1}`,
-    pickupTime: toDisplayTime(t),
-  }));
+
+  let deltaMinutes = 0;
+  if (liveDepartureTime?.trim()) {
+    const liveMin = parseTimeToMinutes(liveDepartureTime);
+    const baseMin = parseTimeToMinutes(times[0]!);
+    if (liveMin != null && baseMin != null) {
+      deltaMinutes = liveMin - baseMin;
+    }
+  }
+
+  return times.map((t, i) => {
+    const baseMin = parseTimeToMinutes(t);
+    const shifted =
+      deltaMinutes === 0 || baseMin == null
+        ? t
+        : minutesToTime24(baseMin + deltaMinutes);
+    return {
+      lectureLabel: labels[i] ?? `${i + 1}`,
+      pickupTime: toDisplayTime(shifted),
+    };
+  });
 }
 
 /** Campus return departures (24h H:MM) — from university back to the line */
