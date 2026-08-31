@@ -1,5 +1,5 @@
-/** Morning pickup times per stop: [8:30 lecture, 10:00 lecture, 11:30 lecture?] in 24h H:MM */
-export type LectureTimes = [string, string] | [string, string, string];
+/** Morning pickup times per stop in 24h H:MM — one slot (8:30 only), two, or three lectures */
+export type LectureTimes = [string] | [string, string] | [string, string, string];
 
 export type PickupSlot = {
   lectureLabel: string;
@@ -8,11 +8,17 @@ export type PickupSlot = {
 
 const LECTURE_LABELS_3 = ["8:30", "10:00", "11:30"] as const;
 const LECTURE_LABELS_2 = ["8:30", "10:00"] as const;
+const LECTURE_LABELS_1 = ["8:30"] as const;
 
 export function getPickupSlots(lineId: number, stopOrder: number): PickupSlot[] | null {
   const times = lectureSchedulesByLineId[lineId]?.[stopOrder - 1];
   if (!times) return null;
-  const labels = times.length === 3 ? LECTURE_LABELS_3 : LECTURE_LABELS_2;
+  const labels =
+    times.length === 3
+      ? LECTURE_LABELS_3
+      : times.length === 2
+        ? LECTURE_LABELS_2
+        : LECTURE_LABELS_1;
   return times.map((t, i) => ({
     lectureLabel: labels[i] ?? `${i + 1}`,
     pickupTime: toDisplayTime(t),
@@ -25,7 +31,7 @@ export const returnDeparturesByLineId: Record<number, string[]> = {
   2: ["11:40", "13:10", "14:40", "16:40"],
   3: ["11:40", "13:10", "14:40", "16:40"],
   4: ["14:40"],
-  5: ["11:40", "13:10", "14:40", "16:40"],
+  5: ["16:40"],
 };
 
 export const lectureSchedulesByLineId: Record<number, LectureTimes[]> = {
@@ -82,6 +88,21 @@ export const lectureSchedulesByLineId: Record<number, LectureTimes[]> = {
     ["7:00", "8:20"],
     ["7:00", "8:25"],
   ],
+  // خط سحاب / جنوب عمّان — محاضرة 8:30 (وقت تجمع واحد لكل محطة)
+  5: [
+    ["7:40"], // الرجيب (بداية الخط)
+    ["7:45"], // إشارة مدخل سحاب
+    ["6:50"], // صيدلية تلال
+    ["6:55"], // البنك الإسلامي (جسر أبو علندا)
+    ["7:00"], // دوار الجمرك
+    ["7:55"], // دوار الحوiyan
+    ["7:05"], // إشارة أبو زغلة
+    ["7:10"], // إشارة الحفاظ
+    ["7:15"], // تقاطع الإرسال
+    ["7:20"], // إشارة حي الصحابة
+    ["7:25"], // دوار قرقش
+    ["7:30"], // دوار الياسمين
+  ],
 };
 
 export function toDisplayTime(t: string): string {
@@ -107,6 +128,7 @@ export function returnDeparturesNote(lineId: number): string {
 }
 
 export function lectureScheduleNote(times: LectureTimes): string {
+  if (times.length === 1) return `محاضرة 8:30 → ${toDisplayTime(times[0])}`;
   const labels = times.length === 3 ? (["10:00", "11:30"] as const) : (["10:00"] as const);
   return times
     .slice(1)

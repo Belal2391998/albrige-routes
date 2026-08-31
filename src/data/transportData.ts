@@ -542,7 +542,7 @@ export const lines: Line[] = [
         35.992024,
         "الرجيب — جنوب سحاب",
         "Al-Rajib — south of Sahab",
-        "06:55 AM",
+        "06:40 AM",
         "https://maps.app.goo.gl/mBMLHg6oMoFqjMvk8",
       ],
       [
@@ -552,7 +552,7 @@ export const lines: Line[] = [
         35.979775,
         "الرجيب — سحاب",
         "Al-Rajib — Sahab",
-        "07:00 AM",
+        "07:45 AM",
         "https://maps.app.goo.gl/ZNgp5S4AZgYYbXx18",
       ],
       [
@@ -562,7 +562,7 @@ export const lines: Line[] = [
         35.960177,
         "أبو علندا — القويسمة",
         "Abu Alanda — Al-Quwaysimah",
-        "07:08 AM",
+        "06:50 AM",
         "https://maps.app.goo.gl/Pw5m7LqbHfhDP8bZ9",
       ],
       [
@@ -572,7 +572,7 @@ export const lines: Line[] = [
         35.937695,
         "أبو علندا — القويسمة",
         "Abu Alanda — Al-Quwaysimah",
-        "07:15 AM",
+        "06:55 AM",
         "https://maps.app.goo.gl/bCCi7pw4n4tVbN839",
       ],
       [
@@ -582,7 +582,7 @@ export const lines: Line[] = [
         35.931445,
         "المقابلين — شارع الحرية",
         "Al-Muqabalain — Al-Hurriyah St.",
-        "07:22 AM",
+        "07:00 AM",
         "https://maps.app.goo.gl/A1tc2aLaPp5E1Wez8",
       ],
       [
@@ -592,7 +592,7 @@ export const lines: Line[] = [
         35.91291,
         "المقابلين — أم قصير",
         "Al-Muqabalain — Umm Qusayr",
-        "07:28 AM",
+        "07:55 AM",
         "https://maps.app.goo.gl/67DCNjF37Hp1YBii8",
       ],
       [
@@ -602,7 +602,7 @@ export const lines: Line[] = [
         35.903098,
         "المقابلين — شارع الحرية",
         "Al-Muqabalain — Al-Hurriyah St.",
-        "07:34 AM",
+        "07:05 AM",
         "https://maps.app.goo.gl/3d8v7UYaCND4dB1n7",
       ],
       [
@@ -612,7 +612,7 @@ export const lines: Line[] = [
         35.890802,
         "المقابلين — شارع الحرية",
         "Al-Muqabalain — Al-Hurriyah St.",
-        "07:40 AM",
+        "07:10 AM",
         "https://maps.app.goo.gl/XTmm9u83w197ropH6",
       ],
       [
@@ -622,7 +622,7 @@ export const lines: Line[] = [
         35.88144,
         "القويسمة",
         "Al-Quwaysimah",
-        "07:46 AM",
+        "07:15 AM",
         "https://maps.app.goo.gl/Tg1BUt8cTXpiAsCz5",
       ],
       [
@@ -632,7 +632,7 @@ export const lines: Line[] = [
         35.887165,
         "الياسمين — القويسمة",
         "Al-Yasmeen — Al-Quwaysimah",
-        "07:52 AM",
+        "07:20 AM",
         "https://maps.app.goo.gl/2a7K35KiW4CM8caBA",
       ],
       [
@@ -642,7 +642,7 @@ export const lines: Line[] = [
         35.894746,
         "القويسمة",
         "Al-Quwaysimah",
-        "07:58 AM",
+        "07:25 AM",
         "https://maps.app.goo.gl/jk6y5KDxbtRLY59x5",
       ],
       [
@@ -652,7 +652,7 @@ export const lines: Line[] = [
         35.8892,
         "منطقة الياسمين — القويسمة",
         "Al-Yasmeen area — Al-Quwaysimah",
-        "08:05 AM",
+        "07:30 AM",
         // No Maps link was provided — pin placed in Al-Yasmeen near Hayy Al-Sahaba
       ],
     ]),
