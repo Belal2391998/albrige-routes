@@ -85,10 +85,12 @@ function reducedMotion() {
 function buildDiagonalRoad(count: number, width: number): RoadGeometry {
   const n = Math.max(count, 1);
   const narrow = width < 640;
-  /** Room for half a stop card above/below first & last nodes (translateY -50%) */
-  const cardHalf = narrow ? 120 : 210;
+  /** Full stop card height incl. schedule table + map button */
+  const cardFull = narrow ? 300 : 420;
+  const cardHalf = Math.ceil(cardFull / 2);
+  /** Vertical gap between adjacent nodes — must exceed card height to avoid overlap */
+  const rowGap = cardFull + (narrow ? 28 : 40);
   const padY = (narrow ? 96 : 110) + cardHalf;
-  const rowGap = narrow ? 198 : 186;
   const height = padY * 2 + Math.max(0, n - 1) * rowGap;
   const edgePad = narrow ? 12 : 20;
   const halfCol = width / 2 - edgePad;
@@ -813,12 +815,13 @@ export function RouteStepper({
                     ref={(node) => {
                       cardRefs.current[i] = node;
                     }}
-                    className="absolute z-10 scroll-mt-28"
+                    className="absolute scroll-mt-28"
                     style={{
                       left,
                       top: pt.y,
                       width: road.cardWidth,
                       transform: "translateY(-50%)",
+                      zIndex: status === "active" ? 30 : 10 + i,
                     }}
                   >
                     <MemoStopCard
@@ -1023,7 +1026,7 @@ function StopCard({
       animate={{
         opacity: active ? 1 : listLayout ? 0.88 : 0.9,
         x: 0,
-        scale: listLayout ? 1 : active ? 1.04 : 1,
+        scale: listLayout ? 1 : active ? 1.02 : 1,
         y: 0,
       }}
       {...(listLayout ? {} : { whileHover: { opacity: 1, scale: active ? 1.05 : 1.02 } })}
