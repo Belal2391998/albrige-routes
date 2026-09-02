@@ -3,8 +3,15 @@ import type { TrafficStatus } from "@/data/transportData";
 
 export type StationStatus = TrafficStatus;
 
+export type LecturePickupSlot = {
+  lectureLabel: string;
+  pickupTime: string;
+};
+
 export type ManagedStation = {
   id: string;
+  /** SQL Server primary key when loaded from ASP.NET API */
+  backendId?: number;
   routeId: string;
   stationIndex: number;
   name: Localized;
@@ -16,10 +23,14 @@ export type ManagedStation = {
   lng: number;
   googleMapsUrl: string;
   imageUrl: string;
+  /** From API lecture schedules — overrides static schedule tables when present */
+  lectureSlots?: LecturePickupSlot[] | undefined;
 };
 
 export type ManagedRoute = {
   id: string;
+  /** SQL Server primary key when loaded from ASP.NET API */
+  backendId?: number;
   routeNumber: string;
   slug: string;
   name: Localized;
@@ -29,6 +40,9 @@ export type ManagedRoute = {
   displayOrder: number;
   createdAt: string;
   stations: ManagedStation[];
+  /** From API — university return departures (display-ready) */
+  returnDepartures?: string[] | undefined;
+  estimatedDurationMinutes?: number | undefined;
 };
 
 export type AppSettings = {
@@ -47,7 +61,7 @@ export type NetworkSnapshot = {
   settings?: AppSettings;
 };
 
-/** DB row shapes (Supabase) */
+/** Server/API row shapes (ASP.NET Core MVC + SQL Server) */
 export type RouteRow = {
   id: string;
   route_number: string;

@@ -1,4 +1,9 @@
-/** Client-side admin password storage (local). */
+/** Admin PIN/password — ASP.NET API when configured, local hash fallback otherwise. */
+
+import { changePassword as apiChangePassword, verifyPasscode } from "@/lib/api/adminApi";
+import { isApiConfigured } from "@/lib/api/config";
+import { getAdminSessionToken } from "@/lib/api/adminSession";
+import { ApiError } from "@/lib/api/client";
 
 const STORAGE_KEY = "albridge_admin_security_v3";
 const LEGACY_KEYS = ["albridge_admin_security_v2", "albridge_admin_security_v1"] as const;
@@ -62,7 +67,7 @@ export async function verifyAdminPassword(password: string): Promise<boolean> {
 }
 
 export type ChangePasswordResult =
-  { ok: true } | { ok: false; error: "password" | "mismatch" | "weak" };
+  { ok: true } | { ok: false; error: "password" | "mismatch" | "weak" | "network" };
 
 /** Change admin password immediately after verifying the current one. */
 export async function changeAdminPassword(input: {
@@ -73,9 +78,42 @@ export async function changeAdminPassword(input: {
   const { currentPassword, newPassword, confirmPassword } = input;
   if (newPassword.trim().length < 4) return { ok: false, error: "weak" };
   if (newPassword !== confirmPassword) return { ok: false, error: "mismatch" };
-  if (!(await verifyAdminPassword(currentPassword))) return { ok: false, error: "password" };
 
+  if (isApiConfigured && getAdminSessionToken()) {
+    try {
+      await apiChangePassword({ currentPassword, newPassword, confirmPassword });
+      return { ok: true };
+    } catch (err) {
+      if (err instanceof ApiError) {
+        if (err.status === 401 || err.status === 400) return { ok: false, error: "password" };
+        return { ok: false, error: "network" };
+      }
+      return { ok: false, error: "network" };
+    }
+  }
+
+  if (!(await verifyAdminPassword(currentPassword))) return { ok: false, error: "password" };
   const passwordHash = await hashSecret(newPassword);
   writeState({ passwordHash });
   return { ok: true };
+}
+
+export type VerifyPasscodeResult = { ok: true; sessionToken?: string | undefined } | { ok: false };
+
+/** Verify dashboard PIN — uses ASP.NET when API is configured. */
+export async function verifyAdminPasscode(passcode: string): Promise<VerifyPasscodeResult> {
+  if (isApiConfigured) {
+    try {
+      const result = await verifyPasscode(passcode);
+      if (result.verified) {
+        return { ok: true, sessionToken: result.sessionToken ?? undefined };
+      }
+      return { ok: false };
+    } catch {
+      return { ok: false };
+    }
+  }
+
+  const ok = await verifyAdminPassword(passcode);
+  return ok ? { ok: true } : { ok: false };
 }

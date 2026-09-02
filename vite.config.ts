@@ -8,6 +8,11 @@ import tsconfigPaths from "vite-tsconfig-paths";
 export default defineConfig({
   server: {
     port: 8080,
+    watch: {
+      // The .NET build locks these files, which crashes the Vite watcher with EBUSY
+      // when the backend rebuilds while the dev server is running.
+      ignored: ["**/backend/**", "**/.vercel/**"],
+    },
   },
   plugins: [
     tsconfigPaths({ projects: ["./tsconfig.json"] }),

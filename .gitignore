@@ -23,6 +23,16 @@ dist-ssr
 # Vercel build output
 .vercel
 
+# ASP.NET / SQLite local databases
+*.db
+*.db-shm
+*.db-wal
+backend/AlbrigeTransport/Data/*.db
+backend/AlbrigeTransport/bin/
+backend/AlbrigeTransport/obj/
+backend/AlbrigeTransport/wwwroot/uploads/**
+!backend/AlbrigeTransport/wwwroot/uploads/**/.gitkeep
+
 # Environment secrets (keep .env.example tracked)
 .env
 .env.*
@@ -40,5 +50,4 @@ dist-ssr
 *.suo
 *.ntvs*
 *.njsproj
-*.sln
 *.sw?

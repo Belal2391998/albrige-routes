@@ -10,6 +10,8 @@ type StopPickupScheduleProps = {
   stopOrder: number;
   /** Fallback when no structured schedule exists */
   departureTime?: string;
+  /** Live slots from backend — preferred over static schedule tables */
+  pickupSlots?: import("@/data/lineLectureSchedules").PickupSlot[] | null | undefined;
   compact?: boolean;
   /** Two-column grid for horizontal carousel cards */
   horizontal?: boolean;
@@ -26,13 +28,14 @@ function StopPickupScheduleCore({
   lineId,
   stopOrder,
   departureTime,
+  pickupSlots,
   compact = false,
   horizontal = false,
   showOfficeHours,
   className,
 }: StopPickupScheduleCoreProps) {
   const { t } = useI18n();
-  const slots = getPickupSlots(lineId, stopOrder, departureTime);
+  const slots = pickupSlots ?? getPickupSlots(lineId, stopOrder, departureTime);
 
   if (!showOfficeHours) return null;
 

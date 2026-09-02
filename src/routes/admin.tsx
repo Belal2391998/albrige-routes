@@ -1,4 +1,12 @@
-import { useEffect, useMemo, useState, type FormEvent, type ReactNode } from "react";
+import {
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  type FormEvent,
+  type ReactNode,
+} from "react";
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { motion } from "motion/react";
 import { toast } from "sonner";
@@ -7,6 +15,7 @@ import {
   Bus,
   Check,
   Clock3,
+  ImagePlus,
   KeyRound,
   Lock,
   Plus,
@@ -22,6 +31,11 @@ import { Header } from "@/components/Header";
 import { AdminSecurityPanel } from "@/components/AdminSecurityPanel";
 import type { TrafficStatus } from "@/data/transportData";
 import { shiftDepartureTime, useSchedule } from "@/context/ScheduleContext";
+import { uploadStationImage } from "@/lib/api/adminApi";
+import { ApiError } from "@/lib/api/client";
+import { isApiConfigured } from "@/lib/api/config";
+import { getAdminSessionToken } from "@/lib/api/adminSession";
+import { compressImageFile, compressImageToUpload, ImageDecodeError } from "@/lib/compressImage";
 import type { ManagedRoute, ManagedStation } from "@/lib/networkTypes";
 import { pick, useI18n } from "@/lib/i18n";
 import { cn } from "@/lib/utils";
@@ -84,13 +98,17 @@ function fieldClass(error?: boolean) {
   );
 }
 
+function apiErrorMessage(err: unknown, fallback: string) {
+  if (err instanceof ApiError && err.message) return err.message;
+  return fallback;
+}
+
 function AdminPage() {
   const { locale, dir, t } = useI18n();
   const navigate = useNavigate();
   const {
     ready,
-    storageMode,
-    supabaseEnabled,
+    apiConnected,
     allRoutes,
     activeRoutes,
     isAdminUnlocked,
@@ -122,9 +140,14 @@ function AdminPage() {
         adminNote: string;
         name: string;
         description: string;
+        googleMapsUrl: string;
+        imageUrl: string;
       }
     >
   >({});
+  const [uploadingId, setUploadingId] = useState<string | null>(null);
+  /** Stops with unsaved edits, so background refreshes never discard typing. */
+  const dirtyStops = useRef<Set<string>>(new Set());
 
   const activeRoute = useMemo(
     () => allRoutes.find((r) => r.id === activeRouteId) ?? allRoutes[0],
@@ -136,19 +159,42 @@ function AdminPage() {
   }, [allRoutes, activeRouteId]);
 
   useEffect(() => {
+    dirtyStops.current.clear();
+  }, [activeRoute?.id, locale]);
+
+  useEffect(() => {
     if (!activeRoute) return;
-    const next: typeof draft = {};
-    for (const stop of activeRoute.stations) {
-      next[stop.id] = {
-        departureTime: stop.defaultTime,
-        trafficStatus: stop.status,
-        adminNote: stop.notes,
-        name: pick(stop.name, locale),
-        description: pick(stop.description, locale),
-      };
-    }
-    setDraft(next);
+    setDraft((prev) => {
+      const next: typeof prev = {};
+      for (const stop of activeRoute.stations) {
+        const pending = prev[stop.id];
+        next[stop.id] =
+          pending && dirtyStops.current.has(stop.id)
+            ? pending
+            : {
+                departureTime: stop.defaultTime,
+                trafficStatus: stop.status,
+                adminNote: stop.notes,
+                name: pick(stop.name, locale),
+                description: pick(stop.description, locale),
+                googleMapsUrl: stop.googleMapsUrl || "",
+                imageUrl: stop.imageUrl || "",
+              };
+      }
+      return next;
+    });
   }, [activeRoute, locale]);
+
+  type DraftRow = (typeof draft)[string];
+
+  const patchDraft = useCallback((stopId: string, patch: Partial<DraftRow>) => {
+    dirtyStops.current.add(stopId);
+    setDraft((prev) => {
+      const cur = prev[stopId];
+      if (!cur) return prev;
+      return { ...prev, [stopId]: { ...cur, ...patch } };
+    });
+  }, []);
 
   const totalStops = allRoutes.reduce((n, l) => n + l.stations.length, 0);
 
@@ -176,57 +222,110 @@ function AdminPage() {
     const description =
       locale === "ar"
         ? { ...stop.description, ar: row.description }
-        : { ...stop.description, en: row.description };
-    await saveStation({
-      ...stop,
-      name,
-      description,
-      defaultTime: row.departureTime,
-      status: row.trafficStatus,
-      notes: row.adminNote,
-    }).then((mode) => toastSaveMode(mode, "stop"));
-  };
-
-  const toastSaveMode = (mode: "supabase" | "local", kind: "stop" | "line" = "line") => {
-    if (mode === "supabase") {
-      toast.success(t.adminSavedCloud);
-    } else if (supabaseEnabled) {
-      toast.message(t.adminSavedLocalOnly);
-    } else {
-      toast.success(kind === "stop" ? t.adminSavedStop : t.adminSavedLine);
+        : locale === "de"
+          ? { ...stop.description, de: row.description, en: stop.description.en }
+          : { ...stop.description, en: row.description };
+    try {
+      await saveStation({
+        ...stop,
+        name,
+        description,
+        defaultTime: row.departureTime,
+        status: row.trafficStatus,
+        notes: row.adminNote,
+        googleMapsUrl: row.googleMapsUrl.trim(),
+        imageUrl: row.imageUrl.trim(),
+      });
+      dirtyStops.current.delete(stop.id);
+      toast.success(t.adminSavedStop);
+    } catch (err) {
+      toast.error(apiErrorMessage(err, t.adminApiError));
     }
   };
 
   const saveAll = async () => {
     if (!activeRoute) return;
-    const mode = await saveLineBulk(
-      activeRoute.stations.map((s) => ({
-        stopId: s.id,
-        ...(draft[s.id]
-          ? {
-              departureTime: draft[s.id]!.departureTime,
-              trafficStatus: draft[s.id]!.trafficStatus,
-              adminNote: draft[s.id]!.adminNote,
-            }
-          : {
-              departureTime: s.defaultTime,
-              trafficStatus: s.status,
-              adminNote: s.notes,
-            }),
-      })),
-    );
-    toastSaveMode(mode, "line");
+    try {
+      await saveLineBulk(
+        activeRoute.stations.map((s) => {
+          const row = draft[s.id];
+          const name =
+            locale === "ar"
+              ? { ...s.name, ar: row?.name ?? pick(s.name, locale) }
+              : locale === "de"
+                ? { ...s.name, de: row?.name ?? pick(s.name, locale), en: s.name.en }
+                : { ...s.name, en: row?.name ?? pick(s.name, locale) };
+          const description =
+            locale === "ar"
+              ? { ...s.description, ar: row?.description ?? pick(s.description, locale) }
+              : locale === "de"
+                ? {
+                    ...s.description,
+                    de: row?.description ?? pick(s.description, locale),
+                    en: s.description.en,
+                  }
+                : { ...s.description, en: row?.description ?? pick(s.description, locale) };
+          return {
+            stopId: s.id,
+            ...(row
+              ? {
+                  departureTime: row.departureTime,
+                  trafficStatus: row.trafficStatus,
+                  adminNote: row.adminNote,
+                  name,
+                  description,
+                  googleMapsUrl: row.googleMapsUrl.trim(),
+                  imageUrl: row.imageUrl.trim(),
+                }
+              : {
+                  departureTime: s.defaultTime,
+                  trafficStatus: s.status,
+                  adminNote: s.notes,
+                }),
+          };
+        }),
+      );
+      dirtyStops.current.clear();
+      toast.success(t.adminSavedLine);
+    } catch (err) {
+      toast.error(apiErrorMessage(err, t.adminApiError));
+    }
   };
 
   const bumpTime = (stopId: string, delta: number) => {
-    setDraft((prev) => {
-      const cur = prev[stopId];
-      if (!cur) return prev;
-      return {
-        ...prev,
-        [stopId]: { ...cur, departureTime: shiftDepartureTime(cur.departureTime, delta) },
-      };
-    });
+    const cur = draft[stopId];
+    if (!cur) return;
+    patchDraft(stopId, { departureTime: shiftDepartureTime(cur.departureTime, delta) });
+  };
+
+  const onStationImageFile = async (stop: ManagedStation, file: File | undefined) => {
+    if (!file) return;
+    if (!file.type.startsWith("image/")) {
+      toast.error(t.adminStationImageInvalid);
+      return;
+    }
+    setUploadingId(stop.id);
+    try {
+      if (isApiConfigured && getAdminSessionToken() && stop.backendId) {
+        // Camera photos are several MB, which the API refuses; resize first.
+        const upload = await compressImageToUpload(file);
+        const uploaded = await uploadStationImage(stop.backendId, upload, locale);
+        patchDraft(stop.id, { imageUrl: uploaded.publicUrl });
+        toast.success(t.adminStationImageSaved);
+        return;
+      }
+
+      const dataUrl = await compressImageFile(file);
+      patchDraft(stop.id, { imageUrl: dataUrl });
+    } catch (err) {
+      toast.error(
+        err instanceof ImageDecodeError
+          ? t.adminStationImageInvalid
+          : apiErrorMessage(err, t.adminStationImageFailed),
+      );
+    } finally {
+      setUploadingId(null);
+    }
   };
 
   if (!isAdminUnlocked) {
@@ -307,10 +406,14 @@ function AdminPage() {
             </div>
             <div className="flex flex-wrap gap-2">
               <span className="inline-flex items-center rounded-xl border border-white/10 bg-white/[0.04] px-3 py-2 text-[11px] font-bold text-slate-300">
-                <span className="me-2 size-1.5 rounded-full bg-[#14B8A6]" aria-hidden />
-                {supabaseEnabled && storageMode === "supabase"
-                  ? t.adminStorageCloud
-                  : t.adminStorageLocal}
+                <span
+                  className={cn(
+                    "me-2 size-1.5 rounded-full",
+                    apiConnected && ready ? "bg-[#14B8A6]" : "bg-amber-400",
+                  )}
+                  aria-hidden
+                />
+                {apiConnected && ready ? t.adminStorageCloud : t.adminStorageLocal}
                 {!ready ? "…" : ""}
               </span>
               <Link
@@ -417,9 +520,13 @@ function AdminPage() {
                   aria-checked={settings.showOfficeHours}
                   aria-label={t.adminShowOfficeHours}
                   onClick={async () => {
-                    const next = !settings.showOfficeHours;
-                    await updateSettings({ showOfficeHours: next });
-                    toast.success(next ? t.adminOfficeHoursShown : t.adminOfficeHoursHidden);
+                    try {
+                      const next = !settings.showOfficeHours;
+                      await updateSettings({ showOfficeHours: next });
+                      toast.success(next ? t.adminOfficeHoursShown : t.adminOfficeHoursHidden);
+                    } catch (err) {
+                      toast.error(apiErrorMessage(err, t.adminApiError));
+                    }
                   }}
                   className={cn(
                     "relative inline-flex h-11 w-[4.5rem] shrink-0 items-center rounded-full border transition-all",
@@ -442,23 +549,39 @@ function AdminPage() {
           <RoutesManager
             routes={allRoutes}
             onCreate={async () => {
-              const route = await createRoute();
-              setActiveRouteId(route.id);
-              setPanel("stations");
-              toast.success(t.adminRouteCreated);
+              try {
+                const route = await createRoute();
+                setActiveRouteId(route.id);
+                setPanel("stations");
+                toast.success(t.adminRouteCreated);
+              } catch (err) {
+                toast.error(apiErrorMessage(err, t.adminApiError));
+              }
             }}
             onToggle={async (route, next) => {
-              await setRouteActive(route.id, next);
-              toast.success(t.adminRouteUpdated);
+              try {
+                await setRouteActive(route.id, next);
+                toast.success(t.adminRouteUpdated);
+              } catch (err) {
+                toast.error(apiErrorMessage(err, t.adminApiError));
+              }
             }}
             onSave={async (route, patch) => {
-              await updateRoute(route.id, patch);
-              toast.success(t.adminRouteUpdated);
+              try {
+                await updateRoute(route.id, patch);
+                toast.success(t.adminRouteUpdated);
+              } catch (err) {
+                toast.error(apiErrorMessage(err, t.adminApiError));
+              }
             }}
             onDelete={async (route) => {
               if (!window.confirm(`${t.adminDeleteRoute}: ${pick(route.name, locale)}?`)) return;
-              await deleteRoute(route.id);
-              toast.message(t.adminRouteDeleted);
+              try {
+                await deleteRoute(route.id);
+                toast.message(t.adminRouteDeleted);
+              } catch (err) {
+                toast.error(apiErrorMessage(err, t.adminApiError));
+              }
             }}
           />
         ) : (
@@ -502,8 +625,12 @@ function AdminPage() {
                     <button
                       type="button"
                       onClick={async () => {
-                        await addStation(activeRoute.id);
-                        toast.success(t.adminStationAdded);
+                        try {
+                          await addStation(activeRoute.id);
+                          toast.success(t.adminStationAdded);
+                        } catch (err) {
+                          toast.error(apiErrorMessage(err, t.adminApiError));
+                        }
                       }}
                       className="inline-flex items-center gap-1.5 rounded-xl border border-[#14B8A6]/35 bg-[#14B8A6]/10 px-3 py-2 text-xs font-extrabold text-[#5eead4]"
                     >
@@ -521,8 +648,12 @@ function AdminPage() {
                     <button
                       type="button"
                       onClick={async () => {
-                        await resetToDefaults();
-                        toast.message(t.adminResetAllToast);
+                        try {
+                          await resetToDefaults();
+                          toast.message(t.adminResetAllToast);
+                        } catch (err) {
+                          toast.error(apiErrorMessage(err, t.adminApiError));
+                        }
                       }}
                       className="inline-flex items-center gap-1.5 rounded-xl border border-rose-400/30 bg-rose-500/10 px-3 py-2 text-xs font-extrabold text-rose-200"
                     >
@@ -537,12 +668,14 @@ function AdminPage() {
                     .slice()
                     .sort((a, b) => a.stationIndex - b.stationIndex)
                     .map((stop, index) => {
-                      const row = draft[stop.id] ?? {
+                      const row: DraftRow = draft[stop.id] ?? {
                         departureTime: stop.defaultTime,
                         trafficStatus: stop.status,
                         adminNote: stop.notes,
                         name: pick(stop.name, locale),
                         description: pick(stop.description, locale),
+                        googleMapsUrl: stop.googleMapsUrl || "",
+                        imageUrl: stop.imageUrl || "",
                       };
                       return (
                         <motion.div
@@ -567,8 +700,12 @@ function AdminPage() {
                                 type="button"
                                 onClick={async () => {
                                   if (!window.confirm(t.adminDeleteStation)) return;
-                                  await deleteStation(stop.id);
-                                  toast.message(t.adminStationDeleted);
+                                  try {
+                                    await deleteStation(stop.id);
+                                    toast.message(t.adminStationDeleted);
+                                  } catch (err) {
+                                    toast.error(apiErrorMessage(err, t.adminApiError));
+                                  }
                                 }}
                                 className="inline-flex items-center gap-1 rounded-lg border border-rose-400/30 bg-rose-500/10 px-2.5 py-1.5 text-[11px] font-extrabold text-rose-200"
                               >
@@ -585,12 +722,7 @@ function AdminPage() {
                               </label>
                               <input
                                 value={row.name}
-                                onChange={(e) =>
-                                  setDraft((prev) => ({
-                                    ...prev,
-                                    [stop.id]: { ...row, name: e.target.value },
-                                  }))
-                                }
+                                onChange={(e) => patchDraft(stop.id, { name: e.target.value })}
                                 className={cn(fieldClass(), "font-bold")}
                               />
                             </div>
@@ -601,13 +733,87 @@ function AdminPage() {
                               <input
                                 value={row.description}
                                 onChange={(e) =>
-                                  setDraft((prev) => ({
-                                    ...prev,
-                                    [stop.id]: { ...row, description: e.target.value },
-                                  }))
+                                  patchDraft(stop.id, { description: e.target.value })
                                 }
                                 className={fieldClass()}
                               />
+                            </div>
+                            <div className="sm:col-span-2">
+                              <label className="mb-1 block text-[10px] font-bold text-slate-500">
+                                {t.adminStationMapsUrl}
+                              </label>
+                              <input
+                                value={row.googleMapsUrl}
+                                onChange={(e) =>
+                                  patchDraft(stop.id, { googleMapsUrl: e.target.value })
+                                }
+                                placeholder="https://maps.google.com/..."
+                                className={fieldClass()}
+                              />
+                            </div>
+                          </div>
+
+                          <div className="mt-3 rounded-2xl border border-white/10 bg-black/20 p-3">
+                            <div className="mb-2 flex flex-wrap items-center justify-between gap-2">
+                              <div>
+                                <p className="flex items-center gap-1.5 text-[10px] font-bold text-slate-400">
+                                  <ImagePlus className="size-3.5 text-[#14B8A6]" />
+                                  {t.adminStationImage}
+                                </p>
+                                <p className="mt-0.5 text-[10px] text-slate-500">
+                                  {t.adminStationImageHint}
+                                </p>
+                              </div>
+                              {row.imageUrl ? (
+                                <button
+                                  type="button"
+                                  onClick={() => patchDraft(stop.id, { imageUrl: "" })}
+                                  className="rounded-lg border border-rose-400/25 px-2 py-1 text-[10px] font-bold text-rose-200"
+                                >
+                                  {t.adminStationImageRemove}
+                                </button>
+                              ) : null}
+                            </div>
+
+                            <div className="grid gap-3 sm:grid-cols-[9rem_minmax(0,1fr)]">
+                              <div className="overflow-hidden rounded-xl border border-white/10 bg-slate-900/80">
+                                {row.imageUrl ? (
+                                  <img
+                                    src={row.imageUrl}
+                                    alt=""
+                                    className="h-28 w-full object-cover sm:h-full sm:min-h-[7rem]"
+                                  />
+                                ) : (
+                                  <div className="flex h-28 items-center justify-center text-[10px] font-bold text-slate-500 sm:min-h-[7rem]">
+                                    —
+                                  </div>
+                                )}
+                              </div>
+                              <div className="space-y-2">
+                                <input
+                                  value={row.imageUrl.startsWith("data:") ? "" : row.imageUrl}
+                                  onChange={(e) =>
+                                    patchDraft(stop.id, { imageUrl: e.target.value })
+                                  }
+                                  placeholder={t.adminStationImageUrl}
+                                  className={fieldClass()}
+                                />
+                                <label className="inline-flex cursor-pointer items-center gap-2 rounded-xl border border-[#14B8A6]/35 bg-[#14B8A6]/10 px-3 py-2 text-[11px] font-extrabold text-[#5eead4] transition hover:bg-[#14B8A6]/20">
+                                  <ImagePlus className="size-3.5" />
+                                  {uploadingId === stop.id ? "…" : t.adminStationImageUpload}
+                                  <input
+                                    type="file"
+                                    accept="image/jpeg,image/png,image/webp,image/*"
+                                    className="hidden"
+                                    disabled={uploadingId === stop.id}
+                                    onChange={(e) => {
+                                      const file = e.target.files?.[0];
+                                      void onStationImageFile(stop, file);
+                                      e.target.value = "";
+                                    }}
+                                  />
+                                </label>
+                              </div>
                             </div>
                           </div>
 
@@ -628,10 +834,7 @@ function AdminPage() {
                                 <input
                                   value={row.departureTime}
                                   onChange={(e) =>
-                                    setDraft((prev) => ({
-                                      ...prev,
-                                      [stop.id]: { ...row, departureTime: e.target.value },
-                                    }))
+                                    patchDraft(stop.id, { departureTime: e.target.value })
                                   }
                                   className={cn(fieldClass(), "text-center font-bold")}
                                 />
@@ -654,12 +857,7 @@ function AdminPage() {
                                   <button
                                     key={opt.id}
                                     type="button"
-                                    onClick={() =>
-                                      setDraft((prev) => ({
-                                        ...prev,
-                                        [stop.id]: { ...row, trafficStatus: opt.id },
-                                      }))
-                                    }
+                                    onClick={() => patchDraft(stop.id, { trafficStatus: opt.id })}
                                     className={cn(
                                       "rounded-full border px-2.5 py-1 text-[10px] font-extrabold transition-all",
                                       row.trafficStatus === opt.id
@@ -679,12 +877,7 @@ function AdminPage() {
                               </label>
                               <input
                                 value={row.adminNote}
-                                onChange={(e) =>
-                                  setDraft((prev) => ({
-                                    ...prev,
-                                    [stop.id]: { ...row, adminNote: e.target.value },
-                                  }))
-                                }
+                                onChange={(e) => patchDraft(stop.id, { adminNote: e.target.value })}
                                 placeholder={t.adminDriverNotePlaceholder}
                                 className={fieldClass()}
                               />
@@ -801,11 +994,15 @@ function RoutesManager({
                       name:
                         locale === "ar"
                           ? { ...route.name, ar: edit.name }
-                          : { ...route.name, en: edit.name },
+                          : locale === "de"
+                            ? { ...route.name, de: edit.name, en: route.name.en }
+                            : { ...route.name, en: edit.name },
                       badge:
                         locale === "ar"
                           ? { ...route.badge, ar: `الخط ${edit.routeNumber}` }
-                          : { ...route.badge, en: `Line ${edit.routeNumber}` },
+                          : locale === "de"
+                            ? { ...route.badge, de: `Linie ${edit.routeNumber}` }
+                            : { ...route.badge, en: `Line ${edit.routeNumber}` },
                     })
                   }
                   className="inline-flex items-center gap-1 rounded-xl bg-[#14B8A6] px-3 py-2 text-xs font-extrabold text-[#0A192F]"

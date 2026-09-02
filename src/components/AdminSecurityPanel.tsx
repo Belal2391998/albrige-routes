@@ -26,6 +26,7 @@ export function AdminSecurityPanel() {
           password: t.adminPinWrong,
           mismatch: t.adminSecurityPasswordMismatch,
           weak: t.adminSecurityPasswordWeak,
+          network: t.adminSecurityNetworkError,
         } as const;
         toast.error(map[result.error]);
         return;

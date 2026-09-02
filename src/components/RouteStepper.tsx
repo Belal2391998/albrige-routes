@@ -1129,6 +1129,7 @@ function StopCard({
           lineId={stop.lineId}
           stopOrder={stop.order}
           departureTime={stop.departureTime}
+          pickupSlots={stop.pickupSlots}
           compact={listLayout || (compact ?? false)}
           horizontal={false}
           showOfficeHours={showOfficeHours}

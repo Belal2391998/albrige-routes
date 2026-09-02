@@ -66,9 +66,7 @@ export function getPickupSlots(
   return times.map((t, i) => {
     const baseMin = parseTimeToMinutes(t);
     const shifted =
-      deltaMinutes === 0 || baseMin == null
-        ? t
-        : minutesToTime24(baseMin + deltaMinutes);
+      deltaMinutes === 0 || baseMin == null ? t : minutesToTime24(baseMin + deltaMinutes);
     return {
       lectureLabel: labels[i] ?? `${i + 1}`,
       pickupTime: toDisplayTime(shifted),

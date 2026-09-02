@@ -1,6 +1,7 @@
 import { Suspense, lazy } from "react";
 import { AnimatePresence, motion } from "motion/react";
 import { MapPin, Navigation, X } from "lucide-react";
+import fleetBoarding from "@/assets/fleet-boarding.jpg";
 import type { Stop, TrafficStatus } from "@/data/transportData";
 import { StopPickupSchedule } from "@/components/StopPickupSchedule";
 import { pick, useI18n } from "@/lib/i18n";
@@ -73,8 +74,8 @@ export function StopModal({
             </div>
 
             <motion.img
-              key={stop.id}
-              src={stop.imageUrl}
+              key={stop.id + (stop.imageUrl || "default")}
+              src={stop.imageUrl || fleetBoarding}
               alt={t.stopPhoto(pick(stop.name, locale))}
               loading="lazy"
               initial={{ opacity: 0, scale: 1.04 }}

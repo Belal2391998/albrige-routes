@@ -83,10 +83,12 @@ export function managedRouteToLine(route: ManagedRoute): Line {
         departureTime: s.defaultTime,
         trafficStatus: s.status,
         adminNote: s.notes,
+        pickupSlots: s.lectureSlots,
       })),
-    returnDepartures: getReturnDepartures(
-      Number.isFinite(numericId) ? numericId : route.displayOrder,
-    ),
+    returnDepartures:
+      route.returnDepartures ??
+      getReturnDepartures(Number.isFinite(numericId) ? numericId : route.displayOrder),
+    estimatedDurationMinutes: route.estimatedDurationMinutes,
   };
 }
 

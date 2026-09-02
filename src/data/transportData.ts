@@ -21,6 +21,7 @@ import {
   lectureScheduleNote,
   lectureSchedulesByLineId,
   toDisplayTime,
+  type PickupSlot,
 } from "@/data/lineLectureSchedules";
 
 export type TrafficStatus = "clear" | "moderate" | "congested";
@@ -38,6 +39,8 @@ export interface Stop {
   departureTime: string;
   trafficStatus?: TrafficStatus;
   adminNote?: string;
+  /** Live lecture pickup slots from backend */
+  pickupSlots?: PickupSlot[] | undefined;
 }
 
 export interface Line {
@@ -50,6 +53,8 @@ export interface Line {
   stops: Stop[];
   /** Afternoon return departures from campus (display-ready) */
   returnDepartures?: string[];
+  /** From backend — preferred over computed trip duration */
+  estimatedDurationMinutes?: number | undefined;
 }
 
 const stopImages = [fleetBoarding, fleetRoad, heroFleet, fleetInterior];

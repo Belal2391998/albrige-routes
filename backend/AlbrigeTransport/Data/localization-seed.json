@@ -1,0 +1,429 @@
+{
+  "lines": [],
+  "stops": [
+    {
+      "lineId": 1,
+      "order": 1,
+      "nameAr": "مسجد أبو نصير الكبير",
+      "nameEn": "Abu Nseir Grand Mosque",
+      "descAr": "بجانب مسجد أبو نصير الكبير",
+      "descEn": "Beside Abu Nseir Grand Mosque"
+    },
+    {
+      "lineId": 1,
+      "order": 2,
+      "nameAr": "دوار الأميرة بسمة",
+      "nameEn": "Princess Basma Roundabout",
+      "descAr": "عند دوار الأميرة بسمة",
+      "descEn": "At Princess Basma Roundabout"
+    },
+    {
+      "lineId": 1,
+      "order": 3,
+      "nameAr": "صويلح (محمص الشعب)",
+      "nameEn": "Sweileh (Al-Shaab Nuts Shop)",
+      "descAr": "مقابل محمص الشعب في صويلح",
+      "descEn": "Opposite Al-Shaab nuts shop in Sweileh"
+    },
+    {
+      "lineId": 1,
+      "order": 4,
+      "nameAr": "صويلح (شركة الكهرباء)",
+      "nameEn": "Sweileh (Electricity Company)",
+      "descAr": "قرب شركة الكهرباء في صويلح",
+      "descEn": "Near the electricity company in Sweileh"
+    },
+    {
+      "lineId": 1,
+      "order": 5,
+      "nameAr": "دوار خلدا",
+      "nameEn": "Khalda Roundabout",
+      "descAr": "مقابل مجمع خلدا التجاري",
+      "descEn": "Opposite Khalda commercial complex"
+    },
+    {
+      "lineId": 1,
+      "order": 6,
+      "nameAr": "حدائق الحسين (جسر المشاة)",
+      "nameEn": "King Hussein Parks (pedestrian bridge)",
+      "descAr": "أسفل جسر المشاة مباشرة",
+      "descEn": "Directly under the pedestrian bridge"
+    },
+    {
+      "lineId": 1,
+      "order": 7,
+      "nameAr": "دوار الشعب",
+      "nameEn": "Al-Shaab Roundabout",
+      "descAr": "أمام محلات الدوار الرئيسية",
+      "descEn": "In front of the main shops at the roundabout"
+    },
+    {
+      "lineId": 1,
+      "order": 8,
+      "nameAr": "مقابل شركة زين (جسر المشاة)",
+      "nameEn": "Opposite Zain (pedestrian bridge)",
+      "descAr": "على الرصيف المقابل لمبنى زين عند جسر المشاة",
+      "descEn": "On the sidewalk opposite Zain at the pedestrian bridge"
+    },
+    {
+      "lineId": 1,
+      "order": 9,
+      "nameAr": "البنك التجاري (جسر المشاة)",
+      "nameEn": "Commercial Bank (pedestrian bridge)",
+      "descAr": "بجانب فرع البنك التجاري تحت الجسر",
+      "descEn": "Beside the Commercial Bank branch under the bridge"
+    },
+    {
+      "lineId": 1,
+      "order": 10,
+      "nameAr": "كازية المناصير (جسر المشاة)",
+      "nameEn": "Manaseer Station (pedestrian bridge)",
+      "descAr": "بجانب محطة المناصير عند جسر المشاة",
+      "descEn": "Beside Manaseer station at the pedestrian bridge"
+    },
+    {
+      "lineId": 2,
+      "order": 1,
+      "nameAr": "الاستشارات",
+      "nameEn": "Consultations Building",
+      "descAr": "عند مبنى الاستشارات في الجامعة الأردنية",
+      "descEn": "At the Consultations building at the University of Jordan"
+    },
+    {
+      "lineId": 2,
+      "order": 2,
+      "nameAr": "مستشفى الإسراء",
+      "nameEn": "Al-Isra Hospital",
+      "descAr": "مقابل مستشفى الإسراء",
+      "descEn": "Opposite Al-Isra Hospital"
+    },
+    {
+      "lineId": 2,
+      "order": 3,
+      "nameAr": "كازية توتال (شارع الجامعة)",
+      "nameEn": "Total Station (University Street)",
+      "descAr": "كازية توتال على شارع الجامعة",
+      "descEn": "Total station on University Street"
+    },
+    {
+      "lineId": 2,
+      "order": 4,
+      "nameAr": "مقابل مستشفى ابن الهيثم (جسر المشاة)",
+      "nameEn": "Opposite Ibn Al-Haytham Hospital (pedestrian bridge)",
+      "descAr": "تحت جسر المشاة مقابل مستشفى ابن الهيثم",
+      "descEn": "Under the pedestrian bridge opposite Ibn Al-Haytham Hospital"
+    },
+    {
+      "lineId": 2,
+      "order": 5,
+      "nameAr": "دوار الواحة (حبيبة)",
+      "nameEn": "Al-Waha Roundabout (Habibeh)",
+      "descAr": "عند دوار الواحة قرب حلويات حبيبة",
+      "descEn": "At Al-Waha Roundabout near Habibeh Sweets"
+    },
+    {
+      "lineId": 2,
+      "order": 6,
+      "nameAr": "دوار الكيلو (جسر المشاة)",
+      "nameEn": "Al-Kilo Roundabout (pedestrian bridge)",
+      "descAr": "عند دوار الكيلو أسفل جسر المشاة",
+      "descEn": "At Al-Kilo Roundabout under the pedestrian bridge"
+    },
+    {
+      "lineId": 2,
+      "order": 7,
+      "nameAr": "السابع (دوار السيفوي)",
+      "nameEn": "7th Circle (Safeway Roundabout)",
+      "descAr": "عند دوار سيفوي في السابع",
+      "descEn": "At Safeway Roundabout on 7th Circle"
+    },
+    {
+      "lineId": 2,
+      "order": 8,
+      "nameAr": "كازية جولف (السابع)",
+      "nameEn": "Golf Station (7th Circle)",
+      "descAr": "بجانب كازية جولف في السابع",
+      "descEn": "Beside the Golf fuel station on 7th Circle"
+    },
+    {
+      "lineId": 2,
+      "order": 9,
+      "nameAr": "كازية المناصير (جسر المشاة)",
+      "nameEn": "Manaseer Station (pedestrian bridge)",
+      "descAr": "بجانب محطة المناصير عند جسر المشاة",
+      "descEn": "Beside Manaseer station at the pedestrian bridge"
+    },
+    {
+      "lineId": 3,
+      "order": 1,
+      "nameAr": "عريفة مول",
+      "nameEn": "Areefa Mall",
+      "descAr": "أمام مدخل عريفة مول في طبربور",
+      "descEn": "In front of Areefa Mall entrance in Tabarbour"
+    },
+    {
+      "lineId": 3,
+      "order": 2,
+      "nameAr": "كازية Go (مجمع الشمال)",
+      "nameEn": "Go Station (North Complex)",
+      "descAr": "محطة Go قبل مجمع الشمال",
+      "descEn": "Go fuel station before the North Complex"
+    },
+    {
+      "lineId": 3,
+      "order": 3,
+      "nameAr": "دوار المدينة الرياضية (بعد السيرفيس)",
+      "nameEn": "Sports City Roundabout (after the service)",
+      "descAr": "عند دوار المدينة الرياضية بعد السيرفيس",
+      "descEn": "At Sports City Roundabout after the service stop"
+    },
+    {
+      "lineId": 3,
+      "order": 4,
+      "nameAr": "الداخلية (مجمع بنك الإسكان)",
+      "nameEn": "Interior Ministry (Housing Bank Complex)",
+      "descAr": "بجانب مجمع بنك الإسكان",
+      "descEn": "Beside the Housing Bank complex"
+    },
+    {
+      "lineId": 3,
+      "order": 5,
+      "nameAr": "الدوار الرابع",
+      "nameEn": "4th Circle",
+      "descAr": "على رصيف الدوار الرابع",
+      "descEn": "On the sidewalk of 4th Circle"
+    },
+    {
+      "lineId": 3,
+      "order": 6,
+      "nameAr": "دوار عبدون",
+      "nameEn": "Abdoun Roundabout",
+      "descAr": "قرب دوار عبدون",
+      "descEn": "Near Abdoun Roundabout"
+    },
+    {
+      "lineId": 3,
+      "order": 7,
+      "nameAr": "تاج مول",
+      "nameEn": "Taj Mall",
+      "descAr": "أمام مدخل تاج مول",
+      "descEn": "In front of Taj Mall entrance"
+    },
+    {
+      "lineId": 3,
+      "order": 8,
+      "nameAr": "كوريدور عبدون (كازية جوبيترول)",
+      "nameEn": "Abdoun Corridor (Jopetrol Station)",
+      "descAr": "محطة جو بترول على كوردور عبدون",
+      "descEn": "Jo Petrol station on Abdoun Corridor"
+    },
+    {
+      "lineId": 3,
+      "order": 9,
+      "nameAr": "مرج الحمام (دوار البرديني)",
+      "nameEn": "Marj Al-Hamam (Al-Bardini Roundabout)",
+      "descAr": "عند دوار البرديني في مرج الحمام",
+      "descEn": "At Al-Bardini Roundabout in Marj Al-Hamam"
+    },
+    {
+      "lineId": 3,
+      "order": 10,
+      "nameAr": "مرج الحمام (إشارات الكنيسة)",
+      "nameEn": "Marj Al-Hamam (Church traffic lights)",
+      "descAr": "عند إشارات الكنيسة في مرج الحمام",
+      "descEn": "At the church traffic lights in Marj Al-Hamam"
+    },
+    {
+      "lineId": 3,
+      "order": 11,
+      "nameAr": "محمص الشعب (طريق السلام)",
+      "nameEn": "Al-Shaab Nuts Shop (Al-Salam Road)",
+      "descAr": "محمص الشعب على طريق السلام",
+      "descEn": "Al-Shaab nuts shop on Al-Salam Road"
+    },
+    {
+      "lineId": 4,
+      "order": 1,
+      "nameAr": "مثلث جامعة البلقاء",
+      "nameEn": "Al-Balqa University Triangle",
+      "descAr": "مثلث جامعة البلقاء التطبيقية",
+      "descEn": "Al-Balqa Applied University triangle"
+    },
+    {
+      "lineId": 4,
+      "order": 2,
+      "nameAr": "جسر وادي حادي",
+      "nameEn": "Wadi Hadi Bridge",
+      "descAr": "عند جسر وادي حادي",
+      "descEn": "At Wadi Hadi Bridge"
+    },
+    {
+      "lineId": 4,
+      "order": 3,
+      "nameAr": "جسر المغاريب",
+      "nameEn": "Al-Maghareeb Bridge",
+      "descAr": "قرب جسر المغاريب",
+      "descEn": "Near Al-Maghareeb Bridge"
+    },
+    {
+      "lineId": 4,
+      "order": 4,
+      "nameAr": "جسر الدباس",
+      "nameEn": "Al-Dabbas Bridge",
+      "descAr": "عند جسر الدباس",
+      "descEn": "At Al-Dabbas Bridge"
+    },
+    {
+      "lineId": 4,
+      "order": 5,
+      "nameAr": "مثلث المدينة الرياضية",
+      "nameEn": "Sports City Triangle",
+      "descAr": "عند مثلث المدينة الرياضية",
+      "descEn": "At Sports City triangle"
+    },
+    {
+      "lineId": 4,
+      "order": 6,
+      "nameAr": "مجمع المناصير",
+      "nameEn": "Manaseer Complex",
+      "descAr": "أمام مجمع المناصير",
+      "descEn": "In front of Manaseer Complex"
+    },
+    {
+      "lineId": 4,
+      "order": 7,
+      "nameAr": "إشارة الدفاع المدني",
+      "nameEn": "Civil Defense Traffic Light",
+      "descAr": "عند إشارة الدفاع المدني",
+      "descEn": "At the Civil Defense traffic light"
+    },
+    {
+      "lineId": 4,
+      "order": 8,
+      "nameAr": "جسر الدبابنة",
+      "nameEn": "Al-Dababneh Bridge",
+      "descAr": "عند جسر الدبابنة",
+      "descEn": "At Al-Dababneh Bridge"
+    },
+    {
+      "lineId": 4,
+      "order": 9,
+      "nameAr": "إشارة عين الباشا",
+      "nameEn": "Ain Al-Basha Traffic Light",
+      "descAr": "على إشارة عين الباشا",
+      "descEn": "At Ain Al-Basha traffic light"
+    },
+    {
+      "lineId": 4,
+      "order": 10,
+      "nameAr": "دوار أم النعاج",
+      "nameEn": "Umm Al-Na'aj Roundabout",
+      "descAr": "عند دوار أم النعاج",
+      "descEn": "At Umm Al-Na'aj Roundabout"
+    },
+    {
+      "lineId": 4,
+      "order": 11,
+      "nameAr": "دوار الكمالية",
+      "nameEn": "Al-Kamaliya Roundabout",
+      "descAr": "عند دوار الكمالية",
+      "descEn": "At Al-Kamaliya Roundabout"
+    },
+    {
+      "lineId": 5,
+      "order": 1,
+      "nameAr": "الرجيب (بداية الخط)",
+      "nameEn": "Al-Rajib (line start)",
+      "descAr": "الرجيب — جنوب سحاب",
+      "descEn": "Al-Rajib — south of Sahab"
+    },
+    {
+      "lineId": 5,
+      "order": 2,
+      "nameAr": "إشارة مدخل سحاب",
+      "nameEn": "Sahab Entrance Traffic Light",
+      "descAr": "الرجيب — سحاب",
+      "descEn": "Al-Rajib — Sahab"
+    },
+    {
+      "lineId": 5,
+      "order": 3,
+      "nameAr": "صيدلية تلال سلوان (قبل جسر مرسيدس)",
+      "nameEn": "Tilal Salwan Pharmacy (before Mercedes Bridge)",
+      "descAr": "أبو علندا — القويسمة",
+      "descEn": "Abu Alanda — Al-Quwaysimah"
+    },
+    {
+      "lineId": 5,
+      "order": 4,
+      "nameAr": "البنك الإسلامي (جسر أبو علندا)",
+      "nameEn": "Islamic Bank (Abu Alanda Bridge)",
+      "descAr": "أبو علندا — القويسمة",
+      "descEn": "Abu Alanda — Al-Quwaysimah"
+    },
+    {
+      "lineId": 5,
+      "order": 5,
+      "nameAr": "دوار الجمرك",
+      "nameEn": "Customs Roundabout",
+      "descAr": "المقابلين — شارع الحرية",
+      "descEn": "Al-Muqabalain — Al-Hurriyah St."
+    },
+    {
+      "lineId": 5,
+      "order": 6,
+      "nameAr": "دوار الحويان",
+      "nameEn": "Al-Huwayyan Roundabout",
+      "descAr": "المقابلين — أم قصير",
+      "descEn": "Al-Muqabalain — Umm Qusayr"
+    },
+    {
+      "lineId": 5,
+      "order": 7,
+      "nameAr": "إشارة أبو زغلة",
+      "nameEn": "Abu Zaghla Traffic Light",
+      "descAr": "المقابلين — شارع الحرية",
+      "descEn": "Al-Muqabalain — Al-Hurriyah St."
+    },
+    {
+      "lineId": 5,
+      "order": 8,
+      "nameAr": "إشارة الحفاظ",
+      "nameEn": "Al-Huffaz Traffic Light",
+      "descAr": "المقابلين — شارع الحرية",
+      "descEn": "Al-Muqabalain — Al-Hurriyah St."
+    },
+    {
+      "lineId": 5,
+      "order": 9,
+      "nameAr": "تقاطع الإرسال",
+      "nameEn": "Al-Irsal Intersection",
+      "descAr": "القويسمة",
+      "descEn": "Al-Quwaysimah"
+    },
+    {
+      "lineId": 5,
+      "order": 10,
+      "nameAr": "إشارة حي الصحابة",
+      "nameEn": "Hayy Al-Sahaba Traffic Light",
+      "descAr": "الياسمين — القويسمة",
+      "descEn": "Al-Yasmeen — Al-Quwaysimah"
+    },
+    {
+      "lineId": 5,
+      "order": 11,
+      "nameAr": "دوار قرقش",
+      "nameEn": "Qarqash Roundabout",
+      "descAr": "القويسمة",
+      "descEn": "Al-Quwaysimah"
+    },
+    {
+      "lineId": 5,
+      "order": 12,
+      "nameAr": "دوار الياسمين",
+      "nameEn": "Al-Yasmeen Roundabout",
+      "descAr": "منطقة الياسمين — القويسمة",
+      "descEn": "Al-Yasmeen area — Al-Quwaysimah"
+    }
+  ]
+}

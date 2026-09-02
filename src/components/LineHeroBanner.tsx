@@ -185,7 +185,7 @@ export function LineHeroBanner({ line }: { line: Line }) {
   const { settings } = useSchedule();
   const mobileLite = useMobileLite();
   const BackIcon = dir === "rtl" ? ArrowRight : ArrowLeft;
-  const mins = estimateTripMinutes(line);
+  const mins = line.estimatedDurationMinutes ?? estimateTripMinutes(line);
   const durationLabel = t.tripDurationApprox(`~${mins}`);
   const traffic = lineTrafficStatus(line);
   const trafficLabel =
